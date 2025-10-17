@@ -345,23 +345,28 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.1, subplot_titles=("UASB", "Filter", "RBC"))
 
-    marker_style = dict(symbol='x', size=8, color=model_colors['Measured'])
+    marker_style_UASB = dict(
+        symbol='x', size=8, color=model_colors['Measured'])
+    marker_style_Filter = dict(
+        symbol='o', size=8, color=model_colors['Measured'])
+    marker_style_RBC = dict(symbol='[]', size=8,
+                            color=model_colors['Measured'])
 
     # UASB Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Eff'], mode='markers',
-                  name='UASB Measured', marker=marker_style), row=1, col=1)
+                  name='UASB Measured', marker=marker_style_UASB), row=1, col=1)
     if 'COD_UASB_Pred' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Pred'], mode='lines',
                                  name='UASB Predicted', line=dict(color=model_colors['UASB'])), row=1, col=1)
     # Filter Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Eff'], mode='markers',
-                  name='Filter Measured', marker=marker_style), row=2, col=1)
+                  name='Filter Measured', marker=marker_style_Filter), row=2, col=1)
     if 'COD_Filt_Pred' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Pred'], mode='lines',
                                  name='Filter Predicted', line=dict(color=model_colors['Filter'])), row=2, col=1)
     # RBC Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final'], mode='markers',
-                  name='RBC Measured', marker=marker_style), row=3, col=1)
+                  name='RBC Measured', marker=marker_style_RBC), row=3, col=1)
     if 'COD_Final_Pred_Orig' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final_Pred_Orig'], mode='lines',
                                  name='RBC Original Pred.', line=dict(color=model_colors['RBC_Orig'])), row=3, col=1)
@@ -374,7 +379,7 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
                       annotation_text="Compliance Limit", annotation_position="bottom right",
                       annotation_font=dict(size=12, color="#FF453A"), row=3, col=1)
 
-    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+    fig.update_layout(height=1000, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
 
     if log_y:
