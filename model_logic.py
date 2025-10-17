@@ -315,7 +315,7 @@ class RBCModel:
         param_keys = ['Ko', 'Ks', 'Ku', 'O', 'Ya', 'Ys', 'umxa', 'umxs']
         try:
             result = differential_evolution(_rbc_objective_function_orig, bounds=bounds, args=(
-                self, param_keys, df_data), strategy='best1bin', maxiter=250, popsize=25, tol=0.01, mutation=(0.5, 1), recombination=0.7, disp=False, workers=-1)
+                self, param_keys, df_data), strategy='best1bin', maxiter=250, popsize=25, tol=0.01, mutation=(0.5, 1), recombination=0.7, disp=False, workers=1)
             kin_params = dict(zip(param_keys, result.x))
             preds = df_data.apply(lambda row: self.predict(
                 {'So': row['COD_Filt_Eff'], 'HRT_days': row['HRT_hours'] / 24.0, 'Xa': row['Xa'], 'Xs': row['Xs']}, kin_params), axis=1)
@@ -353,7 +353,7 @@ class RBCModelWithpH(RBCModel):
                       'Ys', 'umxa', 'umxs', 'pH_min', 'pH_max']
         try:
             result = differential_evolution(_rbc_objective_function_ph, bounds=bounds, args=(
-                self, param_keys, df_data), strategy='best1bin', maxiter=250, popsize=25, tol=0.01, mutation=(0.5, 1), recombination=0.7, disp=False, workers=-1)
+                self, param_keys, df_data), strategy='best1bin', maxiter=250, popsize=25, tol=0.01, mutation=(0.5, 1), recombination=0.7, disp=False, workers=1)
             kin_params = dict(zip(param_keys, result.x))
             preds = df_data.apply(lambda row: self.predict(
                 {'So': row['COD_Filt_Eff'], 'HRT_days': row['HRT_hours'] / 24.0, 'Xa': row['Xa'], 'Xs': row['Xs'], 'pH': row['pH_Eff_RBC']}, kin_params), axis=1)
