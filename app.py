@@ -575,7 +575,7 @@ if st.session_state.reactor:
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
 
         # --- Dashboard Header and Global Filters ---
-        st.header(f"📊 {t('tabs')}")
+        st.header(f"📊 {t('tabs')[0]}")
         st.markdown("This dashboard provides a comprehensive overview of the reactor's performance. Use the filters below to analyze specific time ranges.")
 
         min_day, max_day = int(df_results['Day'].min()), int(
