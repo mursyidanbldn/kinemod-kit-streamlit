@@ -529,7 +529,7 @@ with st.sidebar:
         "", type=["csv"], help=t('sidebar_upload_help'))
     use_github_data = st.checkbox(
         t('sidebar_github'), value=True, help=t('sidebar_github_help'))
-    github_url = "https://raw.githubusercontent.com/RizkyBaldan/KINEMOD-KIT/main/Model_Data.csv"
+    github_url = "https://raw.githubusercontent.com/mursyidanbldn/kinemod-kit-streamlit/refs/heads/main/Model_Data.csv"
 
     # Store the latest data content in session state
     st.session_state.data_content = get_data_content(
