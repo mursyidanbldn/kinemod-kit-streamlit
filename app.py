@@ -330,7 +330,7 @@ def optimization_objective_function(inputs, reactor, fixed_params):
 @st.cache_data
 def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
-                        vertical_spacing=0.1, subplot_titles=("UASB", "Filter", "RBC"))
+                        vertical_spacing=0.1, subplot_titles=("UASB", "Filtration", "RBC"))
     marker_style = dict(symbol='x', size=8)
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Eff'], mode='markers',
                   name='UASB Measured', marker=marker_style), row=1, col=1)
@@ -354,7 +354,7 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
                       annotation_text="Compliance Limit", annotation_position="bottom right",
                       annotation_font=dict(size=12, color="#FF453A"), row=3, col=1)
-    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+    fig.update_layout(height=1000, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     if log_y:
         fig.update_yaxes(type="log")
@@ -575,7 +575,7 @@ if st.session_state.reactor:
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
 
         # --- Dashboard Header and Global Filters ---
-        st.header(f"📊 {t('tabs')[0]}")
+        st.header(f"📊 {t('tabs')}")
         st.markdown("This dashboard provides a comprehensive overview of the reactor's performance. Use the filters below to analyze specific time ranges.")
 
         min_day, max_day = int(df_results['Day'].min()), int(
