@@ -373,7 +373,7 @@ def plot_interactive_parity(df, stage_name, actual_col, pred_cols_dict):
     for i, (model_name, pred_col) in enumerate(pred_cols_dict.items()):
         fig.add_trace(go.Scatter(x=data[actual_col], y=data[pred_col], mode='markers', name=model_name, marker=dict(
             color=macos_colors[i]), customdata=data['Day'], hovertemplate='<b>Day %{customdata}</b><br>Measured: %{x:.2f}<br>Predicted: %{y:.2f}<extra></extra>'))
-    fig.update_layout(height=250, title_f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
+    fig.update_layout(height=250, title=f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
                       legend_title='Model', xaxis=dict(constrain='domain'), yaxis=dict(scaleanchor="x", scaleratio=1), margin=dict(t=40, b=40))
     fig.update_xaxes(range=[min_val - padding, max_val + padding])
     fig.update_yaxes(range=[min_val - padding, max_val + padding])
