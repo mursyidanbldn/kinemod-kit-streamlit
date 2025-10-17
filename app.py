@@ -27,6 +27,7 @@ translations = {
         "title": "KINEMOD-KIT", "subtitle": "UASB-FILTRATION-RBC REACTOR KINETIC MODELING KIT",
         "author_line": "By Rizky Mursyidan Baldan | Last Updated: {}",
         "tabs": ["📊 Dashboard", "🔬 Model Details", "🍃 Methane & Energy", "🔬 Sensitivity", "⚙️ Optimizer", "❓ Help"],
+        "dashboard_header": "Performance Dashboard",
         "welcome_message": "👋 **Welcome!** Please upload your data or select the option to use the default dataset in the sidebar to begin.",
         "sidebar_controls": "⚙️ Controls", "sidebar_upload": "Upload data (CSV)", "sidebar_upload_help": "Upload a custom `Model_Data.csv` file.",
         "sidebar_use_default": "Use default `Model_Data.csv` from GitHub",
@@ -79,6 +80,7 @@ translations = {
         "title": "KINEMOD-KIT", "subtitle": "KIT PEMODELAN KINETIK REAKTOR UASB-FILTRASI-RBC",
         "author_line": "Oleh Rizky Mursyidan Baldan | Terakhir Diperbarui: {}",
         "tabs": ["📊 Dasbor", "🔬 Detail Model", "🍃 Metana & Energi", "🔬 Sensitivitas", "⚙️ Pengoptimal", "❓ Bantuan"],
+        "dashboard_header": "Dasbor Kinerja",
         "welcome_message": "👋 **Selamat datang!** Silakan unggah data Anda atau pilih opsi untuk menggunakan dataset default di bilah sisi untuk memulai.",
         "sidebar_controls": "⚙️ Kontrol", "sidebar_upload": "Unggah data (CSV)", "sidebar_upload_help": "Unggah file `Model_Data.csv` kustom.",
         "sidebar_use_default": "Gunakan `Model_Data.csv` default dari GitHub",
@@ -144,6 +146,17 @@ macos_colors = ['#0A84FF', '#30D158', '#FF9F0A',
 pio.templates["macos"] = go.layout.Template(layout=go.Layout(
     colorway=macos_colors, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'))
 pio.templates.default = "macos"
+
+# Define a consistent color map for models
+model_colors = {
+    'UASB': '#0A84FF',          # Blue
+    'Filter': '#30D158',        # Green
+    'RBC_Orig': '#FF9F0A',      # Orange
+    'RBC_pH': '#FF453A',        # Red
+    'Original': '#FF9F0A',      # Orange (alias for parity plot)
+    'pH Model': '#FF453A',      # Red (alias for parity plot)
+    'Measured': '#555555'       # Dark Grey
+}
 
 st.title(f"💻 {t('title')} 📊")
 st.subheader(t('subtitle'))
@@ -330,34 +343,43 @@ def optimization_objective_function(inputs, reactor, fixed_params):
 @st.cache_data
 def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
-                        vertical_spacing=0.1, subplot_titles=("UASB", "Filtration", "RBC"))
-    marker_style = dict(symbol='x', size=8)
+                        vertical_spacing=0.1, subplot_titles=("UASB", "Filter", "RBC"))
+
+    marker_style = dict(symbol='x', size=8, color=model_colors['Measured'])
+
+    # UASB Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Eff'], mode='markers',
                   name='UASB Measured', marker=marker_style), row=1, col=1)
     if 'COD_UASB_Pred' in df.columns:
-        fig.add_trace(go.Scatter(
-            x=df['Day'], y=df['COD_UASB_Pred'], mode='lines', name='UASB Predicted'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Pred'], mode='lines',
+                                 name='UASB Predicted', line=dict(color=model_colors['UASB'])), row=1, col=1)
+    # Filter Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Eff'], mode='markers',
                   name='Filter Measured', marker=marker_style), row=2, col=1)
     if 'COD_Filt_Pred' in df.columns:
-        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Pred'],
-                      mode='lines', name='Filter Predicted'), row=2, col=1)
+        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Pred'], mode='lines',
+                                 name='Filter Predicted', line=dict(color=model_colors['Filter'])), row=2, col=1)
+    # RBC Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final'], mode='markers',
                   name='RBC Measured', marker=marker_style), row=3, col=1)
     if 'COD_Final_Pred_Orig' in df.columns:
-        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final_Pred_Orig'],
-                      mode='lines', name='RBC Original Pred.'), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final_Pred_Orig'], mode='lines',
+                                 name='RBC Original Pred.', line=dict(color=model_colors['RBC_Orig'])), row=3, col=1)
     if 'COD_Final_Pred_pH' in df.columns:
-        fig.add_trace(go.Scatter(
-            x=df['Day'], y=df['COD_Final_Pred_pH'], mode='lines', name='RBC pH Pred.'), row=3, col=1)
+        fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final_Pred_pH'], mode='lines',
+                                 name='RBC pH Pred.', line=dict(color=model_colors['RBC_pH'])), row=3, col=1)
+
     if compliance_limit:
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
                       annotation_text="Compliance Limit", annotation_position="bottom right",
                       annotation_font=dict(size=12, color="#FF453A"), row=3, col=1)
-    fig.update_layout(height=1000, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+
+    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+
     if log_y:
         fig.update_yaxes(type="log")
+
     fig.update_yaxes(title_text="COD (mg/L)", row=1, col=1)
     fig.update_yaxes(title_text="COD (mg/L)", row=2, col=1)
     fig.update_yaxes(title_text="COD (mg/L)", row=3, col=1)
@@ -370,19 +392,56 @@ def plot_interactive_parity(df, stage_name, actual_col, pred_cols_dict):
     required_cols = [actual_col, 'Day'] + list(pred_cols_dict.values())
     if not all(col in df.columns for col in required_cols):
         return go.Figure().update_layout(title=f'Parity Plot: {stage_name} (Missing Data)')
+
     data = df.dropna(subset=required_cols).copy()
     if data.empty:
         return go.Figure().update_layout(title=f'Parity Plot: {stage_name} (No valid data)')
+
     fig = go.Figure()
+
+    # Sort values for continuous confidence band
+    data_sorted = data.sort_values(by=actual_col).reset_index(drop=True)
+    y_true = data_sorted[actual_col]
+
+    # Define error band (e.g., +/- 10%)
+    error = 0.10 * y_true
+    y_upper = y_true + error
+    y_lower = y_true - error
+
+    # Add shaded confidence band first to be in the background
+    fig.add_trace(go.Scatter(
+        x=np.concatenate([y_true, y_true[::-1]]),
+        y=np.concatenate([y_upper, y_lower[::-1]]),
+        fill='toself',
+        # Using a macos green color with transparency
+        fillcolor='rgba(48, 209, 88, 0.2)',
+        line=dict(color='rgba(255,255,255,0)'),
+        hoverinfo="skip",
+        showlegend=True,
+        name='±10% Error Band'
+    ))
+
+    # Add 1:1 parity line
     all_values = pd.concat([data[actual_col]] + [data[col]
                            for col in pred_cols_dict.values()])
     min_val, max_val = all_values.min(), all_values.max()
     padding = (max_val - min_val) * 0.05
     fig.add_shape(type="line", x0=min_val, y0=min_val, x1=max_val,
                   y1=max_val, line=dict(color="#FF453A", dash="dash"), name="1:1 Line")
-    for i, (model_name, pred_col) in enumerate(pred_cols_dict.items()):
-        fig.add_trace(go.Scatter(x=data[actual_col], y=data[pred_col], mode='markers', name=model_name, marker=dict(
-            color=macos_colors[i]), customdata=data['Day'], hovertemplate='<b>Day %{customdata}</b><br>Measured: %{x:.2f}<br>Predicted: %{y:.2f}<extra></extra>'))
+
+    # Add scatter points for data
+    for model_name, pred_col in pred_cols_dict.items():
+        color_key = model_name if model_name in model_colors else 'UASB'
+        fig.add_trace(go.Scatter(
+            x=data[actual_col],
+            y=data[pred_col],
+            mode='markers',
+            name=model_name,
+            marker=dict(color=model_colors[color_key]),
+            customdata=data['Day'],
+            hovertemplate='<b>Day %{customdata}</b><br>Measured: %{x:.2f}<br>Predicted: %{y:.2f}<extra></extra>'
+        ))
+
     fig.update_layout(height=450, title=f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
                       legend_title='Model', xaxis=dict(constrain='domain'), yaxis=dict(scaleanchor="x", scaleratio=1), margin=dict(t=40, b=40))
     fig.update_xaxes(range=[min_val - padding, max_val + padding])
@@ -575,7 +634,7 @@ if st.session_state.reactor:
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
 
         # --- Dashboard Header and Global Filters ---
-        st.header(f"📊 {t('tabs')[0]}")
+        st.header(f"📊 {t('dashboard_header')}")
         st.markdown("This dashboard provides a comprehensive overview of the reactor's performance. Use the filters below to analyze specific time ranges.")
 
         min_day, max_day = int(df_results['Day'].min()), int(
@@ -650,7 +709,7 @@ if st.session_state.reactor:
                 full_error_df = pd.concat(error_dfs)
                 fig_hist = px.histogram(full_error_df, x="Error", color="Model",
                                         marginal="box", barmode="overlay", title="<b>Error Distribution</b>", height=450,
-                                        template="plotly_white")
+                                        template="plotly_white", color_discrete_map=model_colors)
                 fig_hist.update_layout(margin=dict(t=40, b=40))
                 fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
                 st.plotly_chart(fig_hist, use_container_width=True)
@@ -974,5 +1033,6 @@ if st.session_state.reactor:
 
 else:
     st.info(t('welcome_message'))
+    # You might want to have this image locally in your repo
     st.image("Diagram.png", caption="Diagram of the multi-stage treatment process.",
              use_container_width=True)
