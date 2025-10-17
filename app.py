@@ -45,6 +45,7 @@ translations = {
         "energy_potential_label": "Daily Energy Potential", "uasb_volume_label": "UASB Reactor Volume (m³)",
         "sa_header": "🔬 Sensitivity Analysis", "sa_info": "Evaluate how uncertainty in model parameters affects the output. This is computationally intensive.",
         "sa_type_select": "Select Analysis Type", "sa_model_select": "Select RBC Model", "run_sa_button": "🚀 Run Analysis",
+        "sa_mode_select": "Select Analysis Mode", "sa_mode_specific": "Run a Specific Analysis", "sa_mode_all": "Run All Methods and Models",
         "what_if_header": "⚡ \"What-If\" Scenarios", "what_if_help": "Adjust inputs to see a quick prediction of the final effluent quality based on the pH model.",
         "what_if_cod": "Influent COD (mg/L)", "what_if_hrt_uasb": "UASB HRT (days)", "what_if_hrt_rbc": "RBC HRT (hours)", "what_if_result": "Predicted Final Effluent (pH Model)",
         "optimizer_header": "⚙️ Process Optimizer", "optimizer_intro": "This tool uses an optimization algorithm to find the best operational inputs to achieve a selected goal within your defined constraints.",
@@ -72,8 +73,7 @@ translations = {
         "help_faq_title": "FAQ & Troubleshooting",
         "help_faq1_q": "Why does calibration fail or take a long time?", "help_faq1_a": "Calibration is a complex optimization process. It can fail if the data is very noisy, contains many outliers, or if the initial parameter guesses are far from the optimal values. Ensure your data is clean and covers a wide range of operational conditions.",
         "help_faq2_q": "What's the difference between RBC 'Original' and 'pH Mod' models?", "help_faq2_a": "The 'Original' model is a standard biofilm model. The 'pH Mod' version adds a pH inhibition factor (τ_pH), making the model's predictions sensitive to pH fluctuations, which is common in biological treatment systems.",
-        "download_section_header": "📥 Download Data",
-        "download_data_button": "Download Filtered Data (CSV)",
+        "filtered_data_header": "📊 Filtered Data",
     },
     "id": {
         "title": "KINEMOD-KIT", "subtitle": "KIT PEMODELAN KINETIK REAKTOR UASB-FILTRASI-RBC",
@@ -97,6 +97,7 @@ translations = {
         "energy_potential_label": "Potensi Energi Harian", "uasb_volume_label": "Volume Reaktor UASB (m³)",
         "sa_header": "🔬 Analisis Sensitivitas", "sa_info": "Evaluasi bagaimana ketidakpastian parameter mempengaruhi output. Proses ini intensif secara komputasi.",
         "sa_type_select": "Pilih Jenis Analisis", "sa_model_select": "Pilih Model RBC", "run_sa_button": "🚀 Jalankan Analisis",
+        "sa_mode_select": "Pilih Mode Analisis", "sa_mode_specific": "Jalankan Analisis Spesifik", "sa_mode_all": "Jalankan Semua Metode dan Model",
         "what_if_header": "⚡ Skenario \"What-If\"", "what_if_help": "Sesuaikan input ini untuk melihat prediksi cepat kualitas efluen akhir berdasarkan model pH.",
         "what_if_cod": "COD Influen (mg/L)", "what_if_hrt_uasb": "HRT UASB (hari)", "what_if_hrt_rbc": "HRT RBC (jam)", "what_if_result": "Prediksi Efluen Akhir (Model pH)",
         "optimizer_header": "⚙️ Pengoptimal Proses", "optimizer_intro": "Alat ini menggunakan algoritma optimisasi untuk menemukan input operasional terbaik untuk mencapai tujuan yang dipilih dalam batasan yang Anda tentukan.",
@@ -124,8 +125,7 @@ translations = {
         "help_faq_title": "FAQ & Penyelesaian Masalah",
         "help_faq1_q": "Mengapa kalibrasi gagal atau memakan waktu lama?", "help_faq1_a": "Kalibrasi adalah proses optimisasi yang kompleks. Bisa gagal jika data sangat bising, mengandung banyak pencilan, atau jika tebakan parameter awal jauh dari nilai optimal. Pastikan data Anda bersih dan mencakup berbagai kondisi operasional.",
         "help_faq2_q": "Apa perbedaan antara model RBC 'Original' dan 'pH Mod'?", "help_faq2_a": "Model 'Original' adalah model biofilm standar. Versi 'pH Mod' menambahkan faktor inhibisi pH (τ_pH), membuat prediksi model sensitif terhadap fluktuasi pH, yang umum terjadi pada sistem pengolahan biologis.",
-        "download_section_header": "📥 Unduh Data",
-        "download_data_button": "Unduh Data Terfilter (CSV)",
+        "filtered_data_header": "📊 Data Terfilter",
     }
 }
 
@@ -193,6 +193,7 @@ GLOBAL_STYLES = """
         border: 1px solid rgba(230,230,230,0.5);
         transition: transform 0.35s ease, box-shadow 0.35s ease;
         min-height: 220px;
+        margin-bottom: 1rem; /* Added margin for stacking */
     }
     .kpi-card:hover { transform: scale(1.03) translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
     .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
@@ -343,7 +344,7 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     if compliance_limit:
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
                       annotation_text="Compliance Limit", annotation_position="bottom right", row=3, col=1)
-    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+    fig.update_layout(height=500, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     if log_y:
         fig.update_yaxes(type="log")
@@ -372,8 +373,8 @@ def plot_interactive_parity(df, stage_name, actual_col, pred_cols_dict):
     for i, (model_name, pred_col) in enumerate(pred_cols_dict.items()):
         fig.add_trace(go.Scatter(x=data[actual_col], y=data[pred_col], mode='markers', name=model_name, marker=dict(
             color=macos_colors[i]), customdata=data['Day'], hovertemplate='<b>Day %{customdata}</b><br>Measured: %{x:.2f}<br>Predicted: %{y:.2f}<extra></extra>'))
-    fig.update_layout(title=f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
-                      legend_title='Model', xaxis=dict(constrain='domain'), yaxis=dict(scaleanchor="x", scaleratio=1))
+    fig.update_layout(height=250, title_f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
+                      legend_title='Model', xaxis=dict(constrain='domain'), yaxis=dict(scaleanchor="x", scaleratio=1), margin=dict(t=40, b=40))
     fig.update_xaxes(range=[min_val - padding, max_val + padding])
     fig.update_yaxes(range=[min_val - padding, max_val + padding])
     return fig
@@ -563,71 +564,73 @@ if st.session_state.reactor:
         anim_class = get_animated_class()
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
 
-        st.header(f"🎯 {t('kpi_header')}")
-        min_day, max_day = int(df_results['Day'].min()), int(
-            df_results['Day'].max())
-        selected_days = st.slider(
-            t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_dashboard')
-        filtered_df = df_results[(df_results['Day'] >= selected_days[0]) & (
-            df_results['Day'] <= selected_days[1])]
-        stages = {"UASB": ("COD_UASB_Eff", "COD_UASB_Pred"), "Filter": ("COD_Filt_Eff", "COD_Filt_Pred"), "RBC (Orig)": (
-            "COD_Final", "COD_Final_Pred_Orig"), "RBC (pH Mod)": ("COD_Final", "COD_Final_Pred_pH")}
-        stage_icons = {"UASB": "🦠", "Filter": "✨",
-                       "RBC (Orig)": "🔄", "RBC (pH Mod)": "🌿"}
-        kpi_cols = st.columns(4)
-        for i, (name, (actual_col, pred_col)) in enumerate(stages.items()):
-            if pred_col in filtered_df.columns:
-                valid_df = filtered_df.dropna(subset=[actual_col, pred_col])
-                if not valid_df.empty:
-                    r2, rmse, p_value = r2_score(valid_df[actual_col], valid_df[pred_col]), np.sqrt(mean_squared_error(
-                        valid_df[actual_col], valid_df[pred_col])), stats.f_oneway(valid_df[actual_col], valid_df[pred_col])[1]
-                    with kpi_cols[i]:
-                        create_kpi_card(icon=stage_icons.get(
-                            name, "📊"), title=name, r2=r2, rmse=rmse, p_value=p_value)
+        # Define the new 3-column layout
+        col1, col2, col3 = st.columns([1.2, 2, 2])
 
-        st.markdown("---")
-        st.subheader(t('timeseries_header'))
-        col_left, col_right = st.columns([1, 2.5])
-        with col_left:
+        with col1:
+            st.header(f"🎯 {t('kpi_header')}")
+            min_day, max_day = int(df_results['Day'].min()), int(
+                df_results['Day'].max())
+            selected_days = st.slider(
+                t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_dashboard')
+
+            # Filter data based on slider
+            filtered_df = df_results[(df_results['Day'] >= selected_days[0]) & (
+                df_results['Day'] <= selected_days[1])].copy()
+
             compliance_limit = st.number_input(
                 t('compliance_input'), value=350, min_value=0, step=25)
             compliance_pct = ((filtered_df['COD_Final_Pred_pH'] <= compliance_limit).mean(
             ) * 100 if 'COD_Final_Pred_pH' in filtered_df.columns and not filtered_df['COD_Final_Pred_pH'].isna().all() else 0)
             st.metric(t('kpi_compliance_header'), f"{compliance_pct:.1f}%")
 
-        with col_right:
+            st.markdown("---")
+            # Stack KPI cards vertically
+            stages = {"UASB": ("COD_UASB_Eff", "COD_UASB_Pred"), "Filter": ("COD_Filt_Eff", "COD_Filt_Pred"), "RBC (Orig)": (
+                "COD_Final", "COD_Final_Pred_Orig"), "RBC (pH Mod)": ("COD_Final", "COD_Final_Pred_pH")}
+            stage_icons = {"UASB": "🦠", "Filter": "✨",
+                           "RBC (Orig)": "🔄", "RBC (pH Mod)": "🌿"}
+            for name, (actual_col, pred_col) in stages.items():
+                if pred_col in filtered_df.columns:
+                    valid_df = filtered_df.dropna(
+                        subset=[actual_col, pred_col])
+                    if not valid_df.empty:
+                        r2, rmse, p_value = r2_score(valid_df[actual_col], valid_df[pred_col]), np.sqrt(mean_squared_error(
+                            valid_df[actual_col], valid_df[pred_col])), stats.f_oneway(valid_df[actual_col], valid_df[pred_col])[1]
+                        create_kpi_card(icon=stage_icons.get(
+                            name, "📊"), title=name, r2=r2, rmse=rmse, p_value=p_value)
+
+        with col2:
             log_y = st.checkbox(t('log_axis_toggle'))
             ts_chart = plot_interactive_timeseries(
                 filtered_df, compliance_limit, log_y)
             st.plotly_chart(ts_chart, use_container_width=True)
 
-        st.markdown("---")
-        st.subheader(t('parity_header'))
-        stage_choice = st.selectbox(
-            "Select Stage", ["UASB", "Filter", "RBC (Orig)", "RBC (pH Mod)"])
-        pred_dict, actual = ({"UASB": "COD_UASB_Pred"}, "COD_UASB_Eff") if stage_choice == "UASB" else ({"Filter": "COD_Filt_Pred"}, "COD_Filt_Eff") if stage_choice == "Filter" else (
-            {"Original": "COD_Final_Pred_Orig"}, "COD_Final") if stage_choice == "RBC (Orig)" else ({"pH Model": "COD_Final_Pred_pH"}, "COD_Final")
+        with col3:
+            st.subheader(t('parity_header'))
+            stage_choice = st.selectbox(
+                "Select Stage", ["UASB", "Filter", "RBC (Orig)", "RBC (pH Mod)"])
+            pred_dict, actual = ({"UASB": "COD_UASB_Pred"}, "COD_UASB_Eff") if stage_choice == "UASB" else ({"Filter": "COD_Filt_Pred"}, "COD_Filt_Eff") if stage_choice == "Filter" else (
+                {"Original": "COD_Final_Pred_Orig"}, "COD_Final") if stage_choice == "RBC (Orig)" else ({"pH Model": "COD_Final_Pred_pH"}, "COD_Final")
 
-        par_col, err_col = st.columns([2, 1])
-        with par_col:
             parity_chart = plot_interactive_parity(
                 filtered_df, stage_choice, actual, pred_dict)
             st.plotly_chart(parity_chart, use_container_width=True)
-        with err_col:
+
             error_dfs = [pd.DataFrame({"Error": filtered_df[pred_col] - filtered_df[actual], "Model": model_name}).dropna()
                          for model_name, pred_col in pred_dict.items() if pred_col in filtered_df.columns]
             if error_dfs:
                 full_error_df = pd.concat(error_dfs)
                 fig_hist = px.histogram(full_error_df, x="Error", color="Model",
-                                        marginal="box", barmode="overlay", title="Error Distribution")
+                                        marginal="box", barmode="overlay", title="Error Distribution", height=250,
+                                        template="plotly_white")
+                fig_hist.update_layout(margin=dict(t=40, b=40))
                 fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
                 st.plotly_chart(fig_hist, use_container_width=True)
 
         st.markdown("---")
-        st.subheader(t('download_section_header'))
-        csv = filtered_df.to_csv(index=False).encode('utf-8')
-        st.download_button(label=t('download_data_button'), data=csv,
-                           file_name='filtered_data.csv', mime='text/csv', use_container_width=True)
+        st.header(t('filtered_data_header'))
+        st.dataframe(filtered_df)
 
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -718,64 +721,120 @@ if st.session_state.reactor:
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('sa_header'))
         st.info(t('sa_info'))
-        sa_col1, sa_col2 = st.columns([1, 2])
-        sa_chart = None
-        with sa_col1:
-            sa_type = st.selectbox(t('sa_type_select'), ["GSA", "Monte Carlo"])
-            sa_model = st.selectbox(t('sa_model_select'), [
-                                    "RBC Original", "RBC pH-Modified"])
+
+        control_col, result_col = st.columns([1, 2.5])
+
+        with control_col:
+            analysis_mode = st.radio(
+                t('sa_mode_select'),
+                (t('sa_mode_specific'), t('sa_mode_all')),
+                key='sa_mode'
+            )
+
+            sa_type, sa_model = None, None
+            if analysis_mode == t('sa_mode_specific'):
+                sa_type = st.selectbox(t('sa_type_select'), [
+                                       "GSA", "Monte Carlo"])
+                sa_model = st.selectbox(t('sa_model_select'), [
+                                        "RBC Original", "RBC pH-Modified"])
+
             if st.button(t('run_sa_button'), type="primary", use_container_width=True):
                 if data_content:
-                    model_key = 'ph' if 'pH' in sa_model else 'orig'
-                    with st.spinner(f"Running {sa_type}..."):
-                        sa_error, sa_data = run_sensitivity_analysis(
-                            sa_type, model_key, reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph, data_content, CONFIG)
-                        if sa_error:
-                            st.error(sa_error)
-                            st.session_state.sa_results = None
-                        else:
-                            st.success("Complete!")
-                            st.session_state.sa_results = sa_data
+                    st.session_state.sa_results = {}  # Clear previous results
+
+                    if analysis_mode == t('sa_mode_all'):
+                        all_types = ["GSA", "Monte Carlo"]
+                        all_models = {"RBC Original": "orig",
+                                      "RBC pH-Modified": "ph"}
+                        results_dict = {}
+                        progress_bar = st.progress(
+                            0, text="Starting all analyses...")
+                        total_runs = len(all_types) * len(all_models)
+                        run_count = 0
+
+                        for model_name, model_key in all_models.items():
+                            for type_name in all_types:
+                                run_count += 1
+                                progress_text = f"Running {type_name} for {model_name}... ({run_count}/{total_runs})"
+                                progress_bar.progress(
+                                    run_count / total_runs, text=progress_text)
+
+                                sa_error, sa_data = run_sensitivity_analysis(
+                                    type_name, model_key, reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph, data_content, CONFIG)
+                                key = f"{type_name}_{model_key}"
+                                results_dict[key] = {
+                                    'error': sa_error, 'data': sa_data, 'type': type_name, 'model_name': model_name}
+
+                        st.session_state.sa_results = results_dict
+                        progress_bar.progress(
+                            1.0, text="All analyses complete!")
+                        st.success("All analyses complete!")
+
+                    else:  # Specific analysis
+                        model_key = 'ph' if 'pH' in sa_model else 'orig'
+                        with st.spinner(f"Running {sa_type} for {sa_model}..."):
+                            sa_error, sa_data = run_sensitivity_analysis(
+                                sa_type, model_key, reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph, data_content, CONFIG)
+                            if sa_error:
+                                st.error(sa_error)
+                            else:
+                                key = f"{sa_type}_{model_key}"
+                                st.session_state.sa_results[key] = {
+                                    'error': None, 'data': sa_data, 'type': sa_type, 'model_name': sa_model}
+                                st.success("Analysis complete!")
                 else:
                     st.warning("No data available to run analysis.", icon="⚠️")
 
-        if st.session_state.sa_results:
-            with sa_col2:
-                sa_data = st.session_state.sa_results
-                if 'Mi' in sa_data:
-                    st.subheader("Key Findings")
-                    key_cols = st.columns(2)
-                    sobol_df = pd.DataFrame({k: sa_data['Si'][k] for k in [
-                                            'S1', 'ST']}, index=sa_data['problem']['names'])
-                    top2_sobol = sobol_df.sort_values(
-                        'ST', ascending=False).head(2)
-                    if not top2_sobol.empty:
-                        with key_cols[0]:
-                            st.metric(label=f"1. Most Influential (Sobol ST)",
-                                      value=top2_sobol.index[0], delta=f"{top2_sobol['ST'].iloc[0]:.3f}")
-                        if len(top2_sobol) > 1:
-                            with key_cols[1]:
-                                st.metric(label=f"2. Most Influential (Sobol ST)",
-                                          value=top2_sobol.index[1], delta=f"{top2_sobol['ST'].iloc[1]:.3f}")
-                    sa_chart = plot_gsa_results(
-                        sa_data['Mi'], sa_data['Si'], sa_data['problem'])
-                    st.plotly_chart(sa_chart, use_container_width=True)
-                elif 'mc_results' in sa_data:
-                    st.subheader("Key Findings")
-                    key_cols = st.columns(2)
-                    mc_df = sa_data['mc_results']
-                    top2_mc = mc_df.reindex(mc_df['Spearman_Correlation'].abs(
-                    ).sort_values(ascending=False).index).head(2)
-                    if not top2_mc.empty:
-                        with key_cols[0]:
-                            st.metric(
-                                label=f"1. Most Correlated", value=top2_mc['Parameter'].iloc[0], delta=f"{top2_mc['Spearman_Correlation'].iloc[0]:.3f}")
-                        if len(top2_mc) > 1:
-                            with key_cols[1]:
-                                st.metric(
-                                    label=f"2. Most Correlated", value=top2_mc['Parameter'].iloc[1], delta=f"{top2_mc['Spearman_Correlation'].iloc[1]:.3f}")
-                    sa_chart = plot_mc_results(sa_data['mc_results'])
-                    st.plotly_chart(sa_chart, use_container_width=True)
+        with result_col:
+            if st.session_state.get('sa_results'):
+                for key, result in st.session_state.sa_results.items():
+                    if result['error']:
+                        st.error(
+                            f"Error in {result['type']} for {result['model_name']}: {result['error']}")
+                        continue
+
+                    with st.expander(f"Results for {result['type']} - {result['model_name']}", expanded=True):
+                        sa_data = result['data']
+                        sa_chart = None
+
+                        if result['type'] == 'GSA' and 'Mi' in sa_data:
+                            sa_chart = plot_gsa_results(
+                                sa_data['Mi'], sa_data['Si'], sa_data['problem'])
+                            st.plotly_chart(sa_chart, use_container_width=True)
+
+                            st.subheader("Morris Analysis Data")
+                            st.dataframe(sa_data['Mi'])
+                            st.download_button(
+                                label=f"Download Morris Data ({result['model_name']})",
+                                data=sa_data['Mi'].to_csv().encode('utf-8'),
+                                file_name=f"morris_data_{result['model_name'].replace(' ', '_')}.csv",
+                                mime='text/csv', key=f"dl_morris_{key}"
+                            )
+
+                            sobol_df = pd.DataFrame(
+                                {'S1': sa_data['Si']['S1'], 'ST': sa_data['Si']['ST']}, index=sa_data['problem']['names'])
+                            st.subheader("Sobol Analysis Data")
+                            st.dataframe(sobol_df)
+                            st.download_button(
+                                label=f"Download Sobol Data ({result['model_name']})",
+                                data=sobol_df.to_csv().encode('utf-8'),
+                                file_name=f"sobol_data_{result['model_name'].replace(' ', '_')}.csv",
+                                mime='text/csv', key=f"dl_sobol_{key}"
+                            )
+
+                        elif result['type'] == 'Monte Carlo' and 'mc_results' in sa_data:
+                            sa_chart = plot_mc_results(sa_data['mc_results'])
+                            st.plotly_chart(sa_chart, use_container_width=True)
+
+                            st.subheader("Monte Carlo Correlation Data")
+                            st.dataframe(sa_data['mc_results'])
+                            st.download_button(
+                                label=f"Download Correlation Data ({result['model_name']})",
+                                data=sa_data['mc_results'].to_csv().encode(
+                                    'utf-8'),
+                                file_name=f"mc_correlation_data_{result['model_name'].replace(' ', '_')}.csv",
+                                mime='text/csv', key=f"dl_mc_{key}"
+                            )
 
         st.markdown("</div>", unsafe_allow_html=True)
 
