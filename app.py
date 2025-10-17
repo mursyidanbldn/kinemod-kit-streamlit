@@ -348,8 +348,8 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     marker_style_UASB = dict(
         symbol='x', size=8, color=model_colors['Measured'])
     marker_style_Filter = dict(
-        symbol='o', size=8, color=model_colors['Measured'])
-    marker_style_RBC = dict(symbol='[]', size=8,
+        symbol='circle', size=8, color=model_colors['Measured'])
+    marker_style_RBC = dict(symbol='square', size=8,
                             color=model_colors['Measured'])
 
     # UASB Plot
