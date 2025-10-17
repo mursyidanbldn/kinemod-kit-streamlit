@@ -72,11 +72,8 @@ translations = {
         "help_faq_title": "FAQ & Troubleshooting",
         "help_faq1_q": "Why does calibration fail or take a long time?", "help_faq1_a": "Calibration is a complex optimization process. It can fail if the data is very noisy, contains many outliers, or if the initial parameter guesses are far from the optimal values. Ensure your data is clean and covers a wide range of operational conditions.",
         "help_faq2_q": "What's the difference between RBC 'Original' and 'pH Mod' models?", "help_faq2_a": "The 'Original' model is a standard biofilm model. The 'pH Mod' version adds a pH inhibition factor (τ_pH), making the model's predictions sensitive to pH fluctuations, which is common in biological treatment systems.",
-        "download_section_header": "📥 Download Data & Charts",
+        "download_section_header": "📥 Download Data",
         "download_data_button": "Download Filtered Data (CSV)",
-        "download_ts_chart_button": "Download Time-Series Chart (PNG)",
-        "download_parity_chart_button": "Download Parity Chart (PNG)",
-        "download_sa_chart_button": "Download Sensitivity Chart (PNG)"
     },
     "id": {
         "title": "KINEMOD-KIT", "subtitle": "KIT PEMODELAN KINETIK REAKTOR UASB-FILTRASI-RBC",
@@ -127,11 +124,8 @@ translations = {
         "help_faq_title": "FAQ & Penyelesaian Masalah",
         "help_faq1_q": "Mengapa kalibrasi gagal atau memakan waktu lama?", "help_faq1_a": "Kalibrasi adalah proses optimisasi yang kompleks. Bisa gagal jika data sangat bising, mengandung banyak pencilan, atau jika tebakan parameter awal jauh dari nilai optimal. Pastikan data Anda bersih dan mencakup berbagai kondisi operasional.",
         "help_faq2_q": "Apa perbedaan antara model RBC 'Original' dan 'pH Mod'?", "help_faq2_a": "Model 'Original' adalah model biofilm standar. Versi 'pH Mod' menambahkan faktor inhibisi pH (τ_pH), membuat prediksi model sensitif terhadap fluktuasi pH, yang umum terjadi pada sistem pengolahan biologis.",
-        "download_section_header": "📥 Unduh Data & Grafik",
+        "download_section_header": "📥 Unduh Data",
         "download_data_button": "Unduh Data Terfilter (CSV)",
-        "download_ts_chart_button": "Unduh Grafik Runtun Waktu (PNG)",
-        "download_parity_chart_button": "Unduh Grafik Paritas (PNG)",
-        "download_sa_chart_button": "Unduh Grafik Sensitivitas (PNG)"
     }
 }
 
@@ -160,18 +154,37 @@ st.markdown("---")
 # ==============================================================================
 # 2. Global CSS Styles & Animation Functions
 # ==============================================================================
-st.markdown("""
+
+# Helper function to generate a unique animation class
+
+
+def get_animated_class():
+    # Generate a unique key based on time to force re-animation
+    animation_key = str(int(time.time() * 1000))
+    # Define CSS with a unique keyframe name
+    st.markdown(f"""
+        <style>
+            @keyframes softFadeInUp_{animation_key} {{
+                from {{ opacity: 0; transform: translateY(10px); }}
+                to {{ opacity: 1; transform: translateY(0); }}
+            }}
+            .fade-in-up-{animation_key} {{
+                animation: softFadeInUp_{animation_key} 0.6s ease-out forwards;
+            }}
+        </style>
+    """, unsafe_allow_html=True)
+    return f"fade-in-up-{animation_key}"
+
+
+# All other custom (non-animation) CSS is centralized here
+GLOBAL_STYLES = """
 <style>
-    @keyframes softFadeInUp {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .fade-in-up {
-        animation: softFadeInUp 0.6s ease-out forwards;
-    }
+    /* --- Base & Font --- */
     html, body, [class*="css"] {
         font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", sans-serif;
     }
+
+    /* --- KPI Card (Dashboard Tab) --- */
     .kpi-card {
         display: flex; flex-direction: column; justify-content: space-between;
         background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(10px);
@@ -200,14 +213,39 @@ st.markdown("""
     }
     .badge.green { background-color: #E2F6E9; color: #155724; }
     .badge.red { background-color: #FCE8E6; color: #7F1D1D; }
+
+    /* --- Help Tab Cards --- */
     .help-card {
         background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
         border-radius: 16px; padding: 1.3rem 1.5rem; margin-bottom: 1rem;
         box-shadow: 0 4px 16px rgba(0,0,0,0.05); border: 1px solid rgba(255,255,255,0.4);
         transition: all 0.25s ease;
     }
+    .help-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+    .mini-card {
+        background: rgba(245,245,247,0.9); padding: 1rem; border-radius: 12px;
+        border: 1px solid rgba(200,200,200,0.4); transition: all 0.25s ease;
+        height: 100%;
+    }
+    .mini-card:hover { background: rgba(255,255,255,0.9); transform: translateY(-2px); }
+    .styled-table { width:100%; border-collapse:collapse; margin-top: 0.5rem; }
+    .styled-table th, .styled-table td { padding: 8px 12px; border: 1px solid rgba(200,200,200,0.4); text-align: left; }
+    .styled-table th { font-weight: 600; background-color: rgba(240,240,245,0.8); }
+    .styled-table tr:nth-child(even) { background-color: rgba(248,248,250,0.7); }
+    .divider { margin: 2rem 0; border-top: 1px solid rgba(200,200,200,0.4); }
+
+    /* macOS-style slider and selectbox tweaks */
+    [data-testid="stSlider"] label, [data-testid="stNumberInput"] label { font-weight: 600; font-size: 0.9rem; }
+    [data-testid="stSelectbox"] {
+        background: rgba(245,245,247,0.85); border-radius: 8px !important;
+        border: 1px solid rgba(220,220,220,0.6); box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        padding: 3px 8px !important; transition: all 0.25s ease;
+    }
+    [data-testid="stSelectbox"]:hover { transform: scale(1.01); box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+    [data-baseweb="select"] div { background: transparent !important; }
 </style>
-""", unsafe_allow_html=True)
+"""
+st.markdown(GLOBAL_STYLES, unsafe_allow_html=True)
 
 # ==============================================================================
 # 3. Caching & Backend Logic
@@ -305,8 +343,8 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     if compliance_limit:
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
                       annotation_text="Compliance Limit", annotation_position="bottom right", row=3, col=1)
-    fig.update_layout(
-        height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified")
+    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     if log_y:
         fig.update_yaxes(type="log")
     fig.update_yaxes(title_text="COD (mg/L)", row=1, col=1)
@@ -349,40 +387,57 @@ def create_kpi_card(icon, title, r2, rmse, p_value):
 
 
 def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_rbc_ph):
+    st.markdown("""<style> .equation-card { background-color: #F0F2F6; border-radius: 10px; padding: 10px; margin-bottom: 0px; border: 1px solid #E0E0E0; } .equation-card .title { font-weight: bold; font-size: 1.1em; margin-bottom: 15px; } .equation-card .variables { font-size: 0.9em; margin-top: 15px; columns: 2; -webkit-columns: 2; -moz-columns: 2; } </style> """, unsafe_allow_html=True)
     st.subheader(t('eq_subheader'))
     if params_uasb:
-        st.markdown(f"**{t('help_uasb_title')}**")
         p = params_uasb
+        st.markdown(
+            f"""<div class="equation-card"><div class="title">{t('help_uasb_title')}: Substrate Removal Rate</div></div>""", unsafe_allow_html=True)
         st.latex(
             fr''' SRR = \left( \dfrac{{ \textcolor{{#0A84FF}}{{{p['U_max']:.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{p['K_B']:.3f}}} + OLR }} \right) \cdot \left( \dfrac{1}{{ 1 + \dfrac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{p['K_I']:.3f}}} }} }} \right) ''')
+        st.markdown("""<div class="variables"><b>Where:</b><ul><li><em>SRR</em>: Substrate Removal Rate (g/L·day)</li><li><em>OLR</em>: Organic Loading Rate (g/L·day)</li><li><em>VFA/ALK</em>: VFA/Alkalinity Ratio (dimensionless)</li></ul></div>""", unsafe_allow_html=True)
     if params_filter:
-        st.markdown(f"**{t('help_filter_title')}**")
         p = params_filter
+        st.markdown(
+            f"""<div class="equation-card"><div class="title">{t('help_filter_title')}: COD Removal</div></div>""", unsafe_allow_html=True)
         st.latex(
             fr'COD_{{Removed}} = \textcolor{{#0A84FF}}{{{p["R_cod_tss"]:.3f}}} \cdot (TSS_{{in}} - TSS_{{out}}) + \textcolor{{#0A84FF}}{{{p["k_ads"]:.3f}}} \cdot sCOD_{{in}}')
-    if params_rbc_orig or params_rbc_ph:
-        st.markdown("---")
+        st.markdown("""<div class="variables"><b>Where:</b><ul><li><em>COD<sub>Removed</sub></em>: COD Removed (mg/L)</li><li><em>TSS</em>: Total Suspended Solids (mg/L)</li><li><em>sCOD</em>: Soluble COD (mg/L)</li></ul></div>""", unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("#### RBC Models")
     if params_rbc_orig:
-        st.markdown(f"**RBC v1.0 (Original)**")
         p = params_rbc_orig
+        st.markdown(
+            f"""<div class="equation-card"><div class="title">RBC v1.0 (Original)</div></div>""", unsafe_allow_html=True)
         st.latex(fr'''\mu_a = \dfrac{{\textcolor{{#0A84FF}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#0A84FF}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#0A84FF}}{{{p['Ko']:.3f}}} + \textcolor{{#0A84FF}}{{{p['O']:.3f}}}}}{{ \textcolor{{#0A84FF}}{{{p['Ko']:.3f}}} + \textcolor{{#0A84FF}}{{{p['O']:.3f}}}}}''')
+        st.latex(
+            fr'''\dfrac{{S_o - S_e}}{{HRT}} = \dfrac{{\mu_a \cdot X_a \cdot A_b}}{{\textcolor{{#0A84FF}}{{{p['Ya']:.3f}}} \cdot V}} + \dfrac{{\mu_s \cdot X_s}}{{\textcolor{{#0A84FF}}{{{p['Ys']:.3f}}}}}''')
+        st.markdown("""<div class="variables"><b>Where:</b><ul><li><em>&mu;<sub>a</sub></em>: Growth Rate (day<sup>-1</sup>)</li><li><em>S<sub>o</sub>, S<sub>e</sub></em>: Substrate Conc. (mg/L)</li><li><em>X<sub>a</sub></em>: Attached Biomass (g/m²)</li><li><em>X<sub>s</sub></em>: Suspended Biomass (mg/L)</li><li><em>HRT</em>: Retention Time (days)</li><li><em>V, A<sub>b</sub></em>: Volume (m³), Area (m²)</li></ul></div>""", unsafe_allow_html=True)
+
     if params_rbc_ph:
-        st.markdown(f"**RBC v1.1 (pH-Inhibited)**")
         p = params_rbc_ph
         exponent_val = 0.5 * (p['pH_min'] - p['pH_max'])
+        st.markdown(
+            f"""<div class="equation-card"><div class="title">RBC v1.1 (pH-Inhibited)</div></div>""", unsafe_allow_html=True)
         st.latex(
             fr'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exponent_val:.2f}}} }}{{ 1 + 10^{{pH - \textcolor{{#0A84FF}}{{{p['pH_max']:.2f}}}}} + 10^{{\textcolor{{#0A84FF}}{{{p['pH_min']:.2f}}} - pH}} }}''')
+        st.latex(
+            fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#0A84FF}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#0A84FF}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#0A84FF}}{{{p['Ko']:.3f}}} + \textcolor{{#0A84FF}}{{{p['O']:.3f}}}}}{{ \textcolor{{#0A84FF}}{{{p['Ko']:.3f}}} + \textcolor{{#0A84FF}}{{{p['O']:.3f}}}}}''')
+        st.latex(
+            fr'''\dfrac{{S_o - S_e}}{{HRT}} = \dfrac{{\mu_a \cdot X_a \cdot A_b}}{{\textcolor{{#0A84FF}}{{{p['Ya']:.3f}}} \cdot V}} + \dfrac{{\mu_s \cdot X_s}}{{\textcolor{{#0A84FF}}{{{p['Ys']:.3f}}}}}''')
+        st.markdown("""<div class="variables"><b>Where:</b><ul><li><em>&tau;<sub>pH</sub></em>: pH Inhibition Factor (dimensionless)</li><li><em>&mu;<sub>a</sub></em>: Growth Rate (day<sup>-1</sup>)</li><li><em>S<sub>e</sub></em>: Effluent Substrate Conc. (mg/L)</li></ul></div>""", unsafe_allow_html=True)
 
 
 @st.cache_data
-def plot_gsa_results(mi_df, si, problem):
+def plot_gsa_results(_mi_df, _si, _problem):
     fig = make_subplots(rows=1, cols=2, subplot_titles=(
         'Morris Elementary Effects', 'Sobol Sensitivity Indices'))
-    mi_df.sort_values('mu_star', inplace=True)
-    fig.add_trace(go.Scatter(x=mi_df['mu_star'], y=mi_df['sigma'], mode='markers+text',
-                  text=mi_df.index, textposition="top right"), row=1, col=1)
+    _mi_df.sort_values('mu_star', inplace=True)
+    fig.add_trace(go.Scatter(x=_mi_df['mu_star'], y=_mi_df['sigma'],
+                  mode='markers+text', text=_mi_df.index, textposition="top right"), row=1, col=1)
     sobol_df = pd.DataFrame(
-        {'S1': si['S1'], 'ST': si['ST']}, index=problem['names']).sort_values('ST')
+        {'S1': _si['S1'], 'ST': _si['ST']}, index=_problem['names']).sort_values('ST')
     fig.add_trace(go.Bar(y=sobol_df.index,
                   x=sobol_df['S1'], name='S1 (First-order)', orientation='h'), row=1, col=2)
     fig.add_trace(go.Bar(y=sobol_df.index,
@@ -397,8 +452,8 @@ def plot_gsa_results(mi_df, si, problem):
 
 
 @st.cache_data
-def plot_mc_results(results_df):
-    df_sorted = results_df.sort_values(
+def plot_mc_results(_results_df):
+    df_sorted = _results_df.sort_values(
         by="Spearman_Correlation", key=abs, ascending=True)
     fig = px.bar(df_sorted, y='Parameter', x='Spearman_Correlation', color=np.where(df_sorted['Spearman_Correlation'] > 0, 'Positive', 'Negative'),
                  color_discrete_map={
@@ -425,7 +480,8 @@ with st.sidebar:
     st.header(t('sidebar_controls'))
     uploaded_file = st.file_uploader(t('sidebar_upload'), type=[
                                      "csv"], help=t('sidebar_upload_help'))
-    use_default_data = st.checkbox(t('sidebar_use_default'), value=True)
+    use_default_data = st.checkbox(
+        t('sidebar_use_default'), value=True if not uploaded_file else False)
 
     CONFIG = {"reactor_constants": {"V_RBC": 18, "A_RBC": 240}, "optimization_bounds": {"UASB": [(1.4, 75.9), (4.9, 25.0), (1.9, 8.0)], "Filter": [(0.01, 4.0), (0.01, 2.5)], "RBC": [(
         5, 30), (100, 500), (20, 60), (1, 15), (300, 450), (1, 10), (0.01, 1), (0.01, 2.5)], "RBC_pH": [(5, 50), (50, 100), (20, 30), (1, 5), (1, 5), (1, 10), (0.01, 2.5), (0.01, 2.5), (3.0, 5), (9, 11.5)]}}
@@ -466,13 +522,12 @@ if uploaded_file:
     data_content = uploaded_file.getvalue()
 elif use_default_data:
     try:
-        url = 'https://raw.githubusercontent.com/mursyidanbldn/kinemod-kit-streamlit/refs/heads/main/Model_Data.csv'
-        response = requests.get(url)
-        # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
-        response.raise_for_status()
-        data_content = response.content
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error fetching data from GitHub: {e}")
+        # Read the local CSV file directly from the repository folder
+        with open('Model_Data.csv', 'rb') as f:
+            data_content = f.read()
+    except FileNotFoundError:
+        st.error(
+            "Error: `Model_Data.csv` not found. Please make sure the file is in the same directory as `app.py`.")
         data_content = None
 
 action_to_perform = None
@@ -505,7 +560,9 @@ if st.session_state.reactor:
     tabs = st.tabs(t('tabs'))
 
     with tabs[0]:  # Dashboard
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
+
         st.header(f"🎯 {t('kpi_header')}")
         min_day, max_day = int(df_results['Day'].min()), int(
             df_results['Day'].max())
@@ -530,38 +587,53 @@ if st.session_state.reactor:
 
         st.markdown("---")
         st.subheader(t('timeseries_header'))
-        ts_chart = plot_interactive_timeseries(
-            filtered_df, log_y=st.checkbox(t('log_axis_toggle')))
-        st.plotly_chart(ts_chart, use_container_width=True, key="timeseries")
+        col_left, col_right = st.columns([1, 2.5])
+        with col_left:
+            compliance_limit = st.number_input(
+                t('compliance_input'), value=350, min_value=0, step=25)
+            compliance_pct = ((filtered_df['COD_Final_Pred_pH'] <= compliance_limit).mean(
+            ) * 100 if 'COD_Final_Pred_pH' in filtered_df.columns and not filtered_df['COD_Final_Pred_pH'].isna().all() else 0)
+            st.metric(t('kpi_compliance_header'), f"{compliance_pct:.1f}%")
+
+        with col_right:
+            log_y = st.checkbox(t('log_axis_toggle'))
+            ts_chart = plot_interactive_timeseries(
+                filtered_df, compliance_limit, log_y)
+            st.plotly_chart(ts_chart, use_container_width=True)
 
         st.markdown("---")
         st.subheader(t('parity_header'))
-        parity_chart = plot_interactive_parity(filtered_df, "All Stages", 'COD_Final', {
-                                               "Original": "COD_Final_Pred_Orig", "pH Model": "COD_Final_Pred_pH"})
-        st.plotly_chart(parity_chart, use_container_width=True, key="parity")
+        stage_choice = st.selectbox(
+            "Select Stage", ["UASB", "Filter", "RBC (Orig)", "RBC (pH Mod)"])
+        pred_dict, actual = ({"UASB": "COD_UASB_Pred"}, "COD_UASB_Eff") if stage_choice == "UASB" else ({"Filter": "COD_Filt_Pred"}, "COD_Filt_Eff") if stage_choice == "Filter" else (
+            {"Original": "COD_Final_Pred_Orig"}, "COD_Final") if stage_choice == "RBC (Orig)" else ({"pH Model": "COD_Final_Pred_pH"}, "COD_Final")
+
+        par_col, err_col = st.columns([2, 1])
+        with par_col:
+            parity_chart = plot_interactive_parity(
+                filtered_df, stage_choice, actual, pred_dict)
+            st.plotly_chart(parity_chart, use_container_width=True)
+        with err_col:
+            error_dfs = [pd.DataFrame({"Error": filtered_df[pred_col] - filtered_df[actual], "Model": model_name}).dropna()
+                         for model_name, pred_col in pred_dict.items() if pred_col in filtered_df.columns]
+            if error_dfs:
+                full_error_df = pd.concat(error_dfs)
+                fig_hist = px.histogram(full_error_df, x="Error", color="Model",
+                                        marginal="box", barmode="overlay", title="Error Distribution")
+                fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
+                st.plotly_chart(fig_hist, use_container_width=True)
 
         st.markdown("---")
         st.subheader(t('download_section_header'))
-        dl_cols = st.columns(3)
-        with dl_cols[0]:
-            csv = filtered_df.to_csv(index=False).encode('utf-8')
-            st.download_button(label=t('download_data_button'), data=csv,
-                               file_name='filtered_data.csv', mime='text/csv', use_container_width=True)
-        with dl_cols[1]:
-            ts_img = pio.to_image(ts_chart, format='png',
-                                  width=1200, height=700, scale=2)
-            st.download_button(label=t('download_ts_chart_button'), data=ts_img,
-                               file_name='timeseries_plot.png', mime='image/png', use_container_width=True)
-        with dl_cols[2]:
-            parity_img = pio.to_image(
-                parity_chart, format='png', width=800, height=600, scale=2)
-            st.download_button(label=t('download_parity_chart_button'), data=parity_img,
-                               file_name='parity_plot.png', mime='image/png', use_container_width=True)
+        csv = filtered_df.to_csv(index=False).encode('utf-8')
+        st.download_button(label=t('download_data_button'), data=csv,
+                           file_name='filtered_data.csv', mime='text/csv', use_container_width=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[1]:  # Model Details
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('param_header'))
         param_tab, eq_tab = st.tabs([t('param_subheader'), t('eq_subheader')])
         with param_tab:
@@ -575,36 +647,49 @@ if st.session_state.reactor:
                     st.session_state.edited_params = pd.DataFrame(all_params)
 
             if 'edited_params' in st.session_state and st.session_state.edited_params is not None:
-                edited_df = st.data_editor(
-                    st.session_state.edited_params, key="params_editor", num_rows="dynamic")
-                if st.button(t('rerun_button'), type="primary"):
-                    st.session_state.edited_params = edited_df
-                    with st.spinner("Re-running predictions..."):
-                        p_uasb = dict(edited_df[edited_df['Model'] == 'UASB'].set_index(
-                            'Parameter')['Value'])
-                        p_filter = dict(
-                            edited_df[edited_df['Model'] == 'Filter'].set_index('Parameter')['Value'])
-                        p_rbc_o = dict(edited_df[edited_df['Model'] == 'RBC (Orig)'].set_index(
-                            'Parameter')['Value'])
-                        p_rbc_ph = dict(
-                            edited_df[edited_df['Model'] == 'RBC (pH)'].set_index('Parameter')['Value'])
+                with st.expander("UASB Parameters", expanded=True):
+                    uasb_params = st.data_editor(
+                        st.session_state.edited_params[st.session_state.edited_params['Model'] == 'UASB'], hide_index=True, key='uasb_editor')
+                with st.expander("Filter Parameters"):
+                    filter_params = st.data_editor(
+                        st.session_state.edited_params[st.session_state.edited_params['Model'] == 'Filter'], hide_index=True, key='filter_editor')
+                with st.expander("RBC Parameters"):
+                    rbc_orig_params = st.data_editor(
+                        st.session_state.edited_params[st.session_state.edited_params['Model'] == 'RBC (Orig)'], hide_index=True, key='rbc_o_editor')
+                    rbc_ph_params = st.data_editor(
+                        st.session_state.edited_params[st.session_state.edited_params['Model'] == 'RBC (pH)'], hide_index=True, key='rbc_ph_editor')
 
-                        # We need the original, unprocessed dataframe for rerunning predictions
+                if st.button(t('rerun_button'), type="primary"):
+                    edited_params_df = pd.concat(
+                        [uasb_params, filter_params, rbc_orig_params, rbc_ph_params])
+                    st.session_state.edited_params = edited_params_df
+                    with st.spinner("Re-running predictions..."):
+                        p_uasb = dict(edited_params_df[edited_params_df['Model'] == 'UASB'].set_index(
+                            'Parameter')['Value'])
+                        p_filter = dict(edited_params_df[edited_params_df['Model'] == 'Filter'].set_index(
+                            'Parameter')['Value'])
+                        p_rbc_o = dict(edited_params_df[edited_params_df['Model'] == 'RBC (Orig)'].set_index(
+                            'Parameter')['Value'])
+                        p_rbc_ph = dict(edited_params_df[edited_params_df['Model'] == 'RBC (pH)'].set_index(
+                            'Parameter')['Value'])
+
                         original_unprocessed_df = pd.read_csv(
                             io.BytesIO(data_content), sep=';')
                         new_df = reactor.run_predictions_with_new_params(
                             original_unprocessed_df, p_uasb, p_filter, p_rbc_o, p_rbc_ph)
                         st.session_state.reactor.df = new_df
                         st.success("Predictions updated!")
+                        time.sleep(1)
                         st.experimental_rerun()
 
         with eq_tab:
             display_final_equations(
                 reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[2]:  # Methane & Energy
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('methane_header'))
         filtered_df = df_results[(df_results['Day'] >= st.session_state.get('date_slider_dashboard', (df_results['Day'].min(), df_results['Day'].max()))[
                                   0]) & (df_results['Day'] <= st.session_state.get('date_slider_dashboard', (df_results['Day'].min(), df_results['Day'].max()))[1])]
@@ -626,10 +711,11 @@ if st.session_state.reactor:
             f"{t('methane_prod_label')} (m³/day)", f"{methane_prod:.1f}")
         m_cols[2].metric(
             f"{t('energy_potential_label')} (kWh/day)", f"{energy_potential:.1f}")
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[3]:  # Sensitivity
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('sa_header'))
         st.info(t('sa_info'))
         sa_col1, sa_col2 = st.columns([1, 2])
@@ -657,23 +743,45 @@ if st.session_state.reactor:
             with sa_col2:
                 sa_data = st.session_state.sa_results
                 if 'Mi' in sa_data:
+                    st.subheader("Key Findings")
+                    key_cols = st.columns(2)
+                    sobol_df = pd.DataFrame({k: sa_data['Si'][k] for k in [
+                                            'S1', 'ST']}, index=sa_data['problem']['names'])
+                    top2_sobol = sobol_df.sort_values(
+                        'ST', ascending=False).head(2)
+                    if not top2_sobol.empty:
+                        with key_cols[0]:
+                            st.metric(label=f"1. Most Influential (Sobol ST)",
+                                      value=top2_sobol.index[0], delta=f"{top2_sobol['ST'].iloc[0]:.3f}")
+                        if len(top2_sobol) > 1:
+                            with key_cols[1]:
+                                st.metric(label=f"2. Most Influential (Sobol ST)",
+                                          value=top2_sobol.index[1], delta=f"{top2_sobol['ST'].iloc[1]:.3f}")
                     sa_chart = plot_gsa_results(
                         sa_data['Mi'], sa_data['Si'], sa_data['problem'])
                     st.plotly_chart(sa_chart, use_container_width=True)
                 elif 'mc_results' in sa_data:
+                    st.subheader("Key Findings")
+                    key_cols = st.columns(2)
+                    mc_df = sa_data['mc_results']
+                    top2_mc = mc_df.reindex(mc_df['Spearman_Correlation'].abs(
+                    ).sort_values(ascending=False).index).head(2)
+                    if not top2_mc.empty:
+                        with key_cols[0]:
+                            st.metric(
+                                label=f"1. Most Correlated", value=top2_mc['Parameter'].iloc[0], delta=f"{top2_mc['Spearman_Correlation'].iloc[0]:.3f}")
+                        if len(top2_mc) > 1:
+                            with key_cols[1]:
+                                st.metric(
+                                    label=f"2. Most Correlated", value=top2_mc['Parameter'].iloc[1], delta=f"{top2_mc['Spearman_Correlation'].iloc[1]:.3f}")
                     sa_chart = plot_mc_results(sa_data['mc_results'])
                     st.plotly_chart(sa_chart, use_container_width=True)
 
-            if sa_chart:
-                sa_img = pio.to_image(
-                    sa_chart, format='png', width=1000, height=600, scale=2)
-                st.download_button(label=t('download_sa_chart_button'), data=sa_img,
-                                   file_name='sensitivity_analysis.png', mime='image/png', use_container_width=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[4]:  # Optimizer
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('optimizer_header'))
         st.info(t('optimizer_intro'))
         opt_col1, opt_col2 = st.columns([1, 2])
@@ -718,37 +826,66 @@ if st.session_state.reactor:
                               f"{res.fun:.1f} mg/L", help="This is the lowest possible effluent COD the optimizer could find within your constraints.")
                 else:
                     st.error(t('optimizer_fail'))
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
     with tabs[5]:  # Help
-        st.markdown('<div class="fade-in-up">', unsafe_allow_html=True)
-        st.header(t('help_title'))
-        st.markdown(t('help_intro'))
+        anim_class = get_animated_class()
+        st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
+        st.header("❓ Help & Technical Reference")
+        query = st.text_input("🔍 Search Technical Topics",
+                              placeholder="e.g., 'UASB model', 'kinetic parameters', 'compliance'")
 
-        with st.expander(t('help_usage_title')):
-            st.markdown(
-                f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}")
-            st.markdown(
-                f"**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}")
-            st.markdown(
-                f"**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}")
-            st.markdown(
-                f"**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}")
+        def match(q, *texts): return (not q) or any(q.lower()
+                                                    in (t or "").lower() for t in texts)
 
-        with st.expander(t('help_model_docs_title')):
-            st.markdown(f"#### {t('help_uasb_title')}\n{t('help_uasb_obj')}")
-            st.markdown(
-                f"#### {t('help_filter_title')}\n{t('help_filter_obj')}")
-            st.markdown(f"#### {t('help_rbc_title')}\n{t('help_rbc_obj')}")
+        search_anim_class = get_animated_class()
+        st.markdown(
+            f"<div class='{search_anim_class}'>", unsafe_allow_html=True)
+        if match(query, "overview", "pome", "system", "workflow", "remediation"):
+            st.subheader("🧭 System Overview & Remediation Strategy")
+            st.markdown("""<div class="help-card">The <b>KINEMOD-KIT platform</b> provides a kinetic modeling environment for a synergistic, three-stage bioremediation system designed for high-strength Palm Oil Mill Effluent (POME). The treatment philosophy is based on sequential anaerobic, physical, and aerobic processes to achieve comprehensive pollutant removal.<br><br>🟤 <b>UASB Reactor (Anaerobic Digestion)</b> — This primary stage leverages methanogenic archaea under anaerobic conditions to achieve a substantial reduction in organic load, targeting approximately <b>70% COD removal</b>.<br>🪶 <b>EFB Filtration (Adsorptive Filtration)</b> — Effluent from the UASB is passed through a packed bed of Empty Fruit Bunch (EFB) fibers. This stage serves a dual purpose: physical interception of suspended solids and adsorption of residual oleaginous compounds, achieving over <b>97% TSS removal</b>.<br>🧬 <b>RBC Unit (Aerobic Polishing)</b> — The final stage employs a Rotating Biological Contactor, a fixed-film aerobic reactor, to polish the effluent. This process oxidizes remaining soluble COD to ensure the final discharge quality conforms to regulatory standards, specifically a COD concentration <b>at or below 350 mg/L</b>.</div>""", unsafe_allow_html=True)
 
-        with st.expander(t('help_faq_title')):
-            st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
-            st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
+        if match(query, "uasb", "filter", "rbc", "reactor", "stage", "model"):
+            st.subheader("🔬 Reactor Stages & Kinetic Models")
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown("""<div class="mini-card"><b>🟤 UASB Reactor</b><br>• <b>Process</b>: Mesophilic (35–38°C) anaerobic digestion for biogas production.<br>• <b>Function</b>: Primary organic load reduction via methanogenesis.<br>• <b>Kinetic Model</b>: A modified Stover–Kincannon substrate utilization model, incorporating a non-competitive inhibition term for the VFA/Alkalinity ratio.</div>""", unsafe_allow_html=True)
+            with c2:
+                st.markdown("""<div class="mini-card"><b>🪶 EFB Adsorption Filter</b><br>• <b>Process</b>: Physico-chemical adsorption and filtration.<br>• <b>Function</b>: Removes recalcitrant organics, lipids, and total suspended solids (TSS).<br>• <b>Mechanism</b>: Utilizes lignocellulosic EFB fibers for physical interception and surface chemistry-driven adsorption of pollutants.</div>""", unsafe_allow_html=True)
+            with c3:
+                st.markdown("""<div class="mini-card"><b>🧬 RBC Unit</b><br>• <b>Process</b>: Aerobic fixed-film biological oxidation.<br>• <b>Function</b>: Final polishing of effluent to reduce soluble COD to regulatory levels.<br>• <b>Mechanism</b>: Rotating discs support a high-density, attached-growth biofilm, enhancing oxygen transfer and treatment efficiency.</div>""", unsafe_allow_html=True)
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        if match(query, "operation", "performance", "guidelines", "troubleshooting"):
+            st.subheader("⚙️ Operational & Performance Guidelines")
+            st.markdown("""<div class="help-card"><b>Recommended Hydraulic Retention Time (HRT):</b> For optimal performance, the UASB reactor requires <b>2 to 6 days</b>, while the RBC unit requires <b>10 to 60 hours</b>.<br><b>Expected Biogas Yield:</b> The system is designed to produce approximately <b>0.31 cubic meters of methane</b> per kilogram of COD removed in the UASB stage.<br>• <b>Biofilm Sloughing:</b> Periodic detachment of excess biofilm is normal. If excessive, this may indicate hydraulic shock. Consider **increasing the backwash frequency**.<br>• <b>COD Rebound:</b> A sudden increase in effluent COD may indicate a nutrient imbalance. Verify the C:N:P ratio is maintained near the optimal <b>100:5:1</b>.<br>• <b>Low Methane Production:</b> Insufficient buffering capacity can inhibit methanogenesis. Ensure the process maintains an alkalinity that <b>exceeds 1500 mg/L as CaCO₃</b> to neutralize volatile fatty acids.</div>""", unsafe_allow_html=True)
+
+        if match(query, "interpretation", "analysis", "metric", "dashboard", "statistics"):
+            st.subheader("📊 Guide to Data Interpretation")
+            st.markdown("""<div class="help-card">• <b>R² (Coefficient of Determination)</b> → This metric indicates the proportion of variance in the measured data that is predictable from the model. A value <b>approaching 1.0</b> signifies a strong model fit.<br>• <b>RMSE (Root Mean Square Error)</b> → Represents the standard deviation of the prediction errors (residuals). A <b>lower RMSE value</b> indicates higher prediction accuracy, in the same units as the response variable (mg/L COD).<br>• <b>ANOVA p-value</b> → Used to test the statistical significance between datasets. A p-value <b>less than 0.05</b> typically indicates that the observed differences between the model's predictions and the measured data are statistically significant.<br><br><b>Parity Plot Analysis:</b> This visualization plots predicted values against measured values. For a perfect model, all data points would lie on the <b>diagonal y=x line</b>. Deviations from this line indicate systemic under- or over-prediction.<br><b>Time-Series Analysis:</b> This chart tracks model performance over time, which is critical for identifying trends, cyclical patterns, or responses to operational changes.</div>""", unsafe_allow_html=True)
+
+        if match(query, "standard", "kepmen", "limit", "compliance", "regulatory"):
+            st.subheader("🌿 Regulatory Compliance Standards (Indonesia)")
+            st.markdown("""<div class="help-card">The effluent quality targets are based on the Indonesian ministerial decree: <b>Kepmen LH No. 5 Tahun 2014</b>, regarding the Quality Standards for Liquid Waste from the Palm Oil Industry.<br><table class="styled-table"><tr><th>Parameter</th><th>Maximum Permissible Limit</th></tr><tr><td>COD (Chemical Oxygen Demand)</td><td>Must be <b>at or below 350 mg/L</b></td></tr><tr><td>BOD (Biochemical Oxygen Demand)</td><td>Must be <b>at or below 100 mg/L</b></td></tr><tr><td>TSS (Total Suspended Solids)</td><td>Must be <b>at or below 150 mg/L</b></td></tr><tr><td>Oil & Grease</td><td>Must be <b>at or below 25 mg/L</b></td></tr><tr><td>pH</td><td>Must be within the range of <b>6.0 to 9.0</b></td></tr></table></div>""", unsafe_allow_html=True)
+        st.markdown(
+            "</div>", unsafe_allow_html=True)  # End of search animation wrapper
+
+        st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+        st.subheader("📤 Feedback & Support")
+        with st.form("feedback_form"):
+            email = st.text_input("Email Address (Optional)")
+            msg = st.text_area("Provide feedback or report an issue")
+            sent = st.form_submit_button("Submit Feedback 🍏")
+            if sent:
+                if not msg.strip():
+                    st.warning("⚠️ Please enter a message before submitting.")
+                else:
+                    st.success(
+                        "✅ Feedback submitted successfully. Thank you for helping to improve KINEMOD-KIT!")
+        st.markdown("<center style='opacity:0.7; font-size:0.85rem;'>Built with ❤️ by Rizky Mursyidan Baldan — KINEMOD-KIT Thesis Project</center>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 else:
     st.info(t('welcome_message'))
     # You might want to have this image locally in your repo
-    st.image("Diagram.png",
-             caption="Diagram of the multi-stage treatment process.", width=500)
+    st.image("Diagram.png", caption="Diagram of the multi-stage treatment process.",
+             use_container_width=True)
