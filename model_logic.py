@@ -37,7 +37,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib
 # Use TkAgg backend for better compatibility in various environments (especially for interactive plots)
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 
 
 # --- Initialize Rich Console ---
@@ -802,17 +802,20 @@ class IntegratedReactor:
         param_values_sobol = saltelli.sample(
             problem, N=N_sobol, calc_second_order=True)
 
-        Y_morris = np.array([self._gsa_model_wrapper(p, param_keys, self.steady_df, rbc_model_key) for p in param_values_morris])
-        Y_sobol = np.array([self._gsa_model_wrapper(p, param_keys, self.steady_df, rbc_model_key) for p in param_values_sobol])
+        Y_morris = np.array([self._gsa_model_wrapper(
+            p, param_keys, self.steady_df, rbc_model_key) for p in param_values_morris])
+        Y_sobol = np.array([self._gsa_model_wrapper(
+            p, param_keys, self.steady_df, rbc_model_key) for p in param_values_sobol])
 
         # NEW: Check for widespread solver failure
         if np.isnan(Y_morris).sum() > len(Y_morris) * 0.9 or np.isnan(Y_sobol).sum() > len(Y_sobol) * 0.9:
-            return None, None, None # Signal failure
+            return None, None, None  # Signal failure
 
         Y_morris, Y_sobol = np.nan_to_num(Y_morris, nan=np.nanmean(
             Y_morris)), np.nan_to_num(Y_sobol, nan=np.nanmean(Y_sobol))
 
-        Mi = morris_analyzer.analyze(problem, param_values_morris, Y_morris, conf_level=0.95)
+        Mi = morris_analyzer.analyze(
+            problem, param_values_morris, Y_morris, conf_level=0.95)
         Si = sobol.analyze(problem, Y_sobol, calc_second_order=True)
 
         return Mi, Si, problem
@@ -822,13 +825,15 @@ class IntegratedReactor:
             params[key]*0.75, params[key]*1.25, N) for key in param_keys}
         samples_df = pd.DataFrame(samples)
 
-        outputs = [self._gsa_model_wrapper(samples_df.iloc[i].values, param_keys, self.steady_df, rbc_model_key) for i in range(N)]
+        outputs = [self._gsa_model_wrapper(
+            samples_df.iloc[i].values, param_keys, self.steady_df, rbc_model_key) for i in range(N)]
 
         samples_df['Output'] = outputs
 
         # NEW: Check for widespread solver failure
-        if samples_df['Output'].notna().sum() < N * 0.1: # If less than 10% of runs succeeded
-            return None # Signal failure
+        # If less than 10% of runs succeeded
+        if samples_df['Output'].notna().sum() < N * 0.1:
+            return None  # Signal failure
 
         samples_df.dropna(inplace=True)
         correlations = {key: stats.spearmanr(samples_df[key], samples_df['Output'])[
@@ -1038,10 +1043,12 @@ class IntegratedReactor:
         df = df_original.copy()
 
         # Recalculate predictions based on the new parameters
-        srr_pred = self.uasb_model.predict((df['OLR_UASB'], df['VFA_ALK_Ratio']), params_uasb)
+        srr_pred = self.uasb_model.predict(
+            (df['OLR_UASB'], df['VFA_ALK_Ratio']), params_uasb)
         df['COD_UASB_Pred'] = df['COD_in'] - srr_pred * df['HRT_UASB']
 
-        cod_removed_filt = self.filter_model.predict((df['TSS_UASB_Eff'], df['TSS_Filt_Eff'], df['COD_UASB_Pred']), params_filter)
+        cod_removed_filt = self.filter_model.predict(
+            (df['TSS_UASB_Eff'], df['TSS_Filt_Eff'], df['COD_UASB_Pred']), params_filter)
         df['COD_Filt_Pred'] = df['COD_UASB_Pred'] - cod_removed_filt
 
         if params_rbc_orig:
@@ -1052,4 +1059,3 @@ class IntegratedReactor:
                 {'So': row['COD_Filt_Pred'], 'HRT_days': row['HRT_hours'] / 24.0, 'Xa': row['Xa'], 'Xs': row['Xs'], 'pH': row['pH_Eff_RBC']}, params_rbc_ph), axis=1)
 
         return df
-
