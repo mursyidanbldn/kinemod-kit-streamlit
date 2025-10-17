@@ -5,6 +5,4 @@ plotly
 scikit-learn
 scipy
 SALib
-matplotlib
-seaborn
-rich
+requests

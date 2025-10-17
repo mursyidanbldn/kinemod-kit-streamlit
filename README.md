@@ -26,20 +26,20 @@ No installation required - just click and use!
 
 ## 🎯 Features
 
-- ✅ **Real-time Kinetic Modeling** - Calibrate model parameters from your data
-- 📊 **Interactive Dashboard** - Visualize performance with dynamic charts
-- 🔬 **Sensitivity Analysis** - Global Sensitivity Analysis (GSA) and Monte Carlo simulations
-- ⚙️ **Process Optimizer** - Find optimal operational conditions
-- 🌿 **Methane & Energy Potential** - Calculate biogas production and energy generation
-- 🌐 **Bilingual Support** - English and Bahasa Indonesia
+- ✅ **Real-time Kinetic Modeling** - Upload your own CSV data or load the default Model_Data.csv directly from the project's GitHub repository
+- 📊 **Interactive Dashboard** - Visualize model performance with dynamic time-series and parity plots. All charts and data are downloadable
+- 🔬 **Sensitivity Analysis** - Perform Global Sensitivity Analysis (GSA) and Monte Carlo simulations to understand parameter influence. Results are cached for performance
+- ⚙️ **Process Optimizer** - Find the optimal operational conditions (e.g., HRT, Influent COD) to minimize final effluent COD
+- 🌿 **Methane & Energy Potential** - Calculate potential biogas production and energy generation from the UASB stage
+- 🌐 **Bilingual Support** - Full interface in both English and Bahasa Indonesia
 
 ---
 
 ## 📖 How to Use
 
-1. **Upload your data** - CSV file with reactor performance data
-2. **Calibrate models** - Click "Calibrate" to estimate kinetic parameters
-3. **Analyze results** - Explore the dashboard, view equations, and run analyses
+1. **Upload your data** - Upon loading, either upload your own CSV file with reactor performance data or use the pre-selected checkbox to load the default dataset from GitHub
+2. **Calibrate models** - In the sidebar, click "Calibrate" to estimate kinetic parameters from the data, or "Load" if you have a `calibrated_params.json` file
+3. **Analyze results** - Explore the Dashboard tab to see KPIs and interactive charts. Use the date slider to filter the data
 4. **Optimize** - Find the best operational settings for your system
 
 ---
