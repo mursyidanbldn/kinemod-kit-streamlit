@@ -192,10 +192,9 @@ GLOBAL_STYLES = """
         box-shadow: 0 4px 15px rgba(0,0,0,0.08);
         border: 1px solid rgba(230,230,230,0.5);
         transition: transform 0.35s ease, box-shadow 0.35s ease;
-        min-height: 220px;
-        margin-bottom: 1rem; /* Added margin for stacking */
+        height: 100%;
     }
-    .kpi-card:hover { transform: scale(1.03) translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
+    .kpi-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.12); }
     .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
     .kpi-icon {
         display: flex; align-items: center; justify-content: center;
@@ -215,6 +214,16 @@ GLOBAL_STYLES = """
     .badge.green { background-color: #E2F6E9; color: #155724; }
     .badge.red { background-color: #FCE8E6; color: #7F1D1D; }
 
+    /* --- Section Container for Dashboard --- */
+    .section-container {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04);
+    }
+    
     /* --- Help Tab Cards --- */
     .help-card {
         background: rgba(255,255,255,0.7); backdrop-filter: blur(12px);
@@ -343,8 +352,9 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
             x=df['Day'], y=df['COD_Final_Pred_pH'], mode='lines', name='RBC pH Pred.'), row=3, col=1)
     if compliance_limit:
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
-                      annotation_text="Compliance Limit", annotation_position="bottom right", row=3, col=1)
-    fig.update_layout(height=500, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
+                      annotation_text="Compliance Limit", annotation_position="bottom right",
+                      annotation_font=dict(size=12, color="#FF453A"), row=3, col=1)
+    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
         orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
     if log_y:
         fig.update_yaxes(type="log")
@@ -373,7 +383,7 @@ def plot_interactive_parity(df, stage_name, actual_col, pred_cols_dict):
     for i, (model_name, pred_col) in enumerate(pred_cols_dict.items()):
         fig.add_trace(go.Scatter(x=data[actual_col], y=data[pred_col], mode='markers', name=model_name, marker=dict(
             color=macos_colors[i]), customdata=data['Day'], hovertemplate='<b>Day %{customdata}</b><br>Measured: %{x:.2f}<br>Predicted: %{y:.2f}<extra></extra>'))
-    fig.update_layout(height=250, title=f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
+    fig.update_layout(height=450, title=f'<b>Parity Plot: {stage_name}</b>', xaxis_title='Measured COD (mg/L)', yaxis_title='Predicted COD (mg/L)',
                       legend_title='Model', xaxis=dict(constrain='domain'), yaxis=dict(scaleanchor="x", scaleratio=1), margin=dict(t=40, b=40))
     fig.update_xaxes(range=[min_val - padding, max_val + padding])
     fig.update_yaxes(range=[min_val - padding, max_val + padding])
@@ -564,33 +574,30 @@ if st.session_state.reactor:
         anim_class = get_animated_class()
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
 
-        # Define the new 3-column layout
-        col1, col2, col3 = st.columns([1.2, 2, 2])
+        # --- Dashboard Header and Global Filters ---
+        st.header(f"📊 {t('tabs')[0]}")
+        st.markdown("This dashboard provides a comprehensive overview of the reactor's performance. Use the filters below to analyze specific time ranges.")
 
-        with col1:
-            st.header(f"🎯 {t('kpi_header')}")
-            min_day, max_day = int(df_results['Day'].min()), int(
-                df_results['Day'].max())
-            selected_days = st.slider(
-                t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_dashboard')
+        min_day, max_day = int(df_results['Day'].min()), int(
+            df_results['Day'].max())
+        selected_days = st.slider(
+            t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_dashboard')
 
-            # Filter data based on slider
-            filtered_df = df_results[(df_results['Day'] >= selected_days[0]) & (
-                df_results['Day'] <= selected_days[1])].copy()
+        filtered_df = df_results[(df_results['Day'] >= selected_days[0]) & (
+            df_results['Day'] <= selected_days[1])].copy()
 
-            compliance_limit = st.number_input(
-                t('compliance_input'), value=350, min_value=0, step=25)
-            compliance_pct = ((filtered_df['COD_Final_Pred_pH'] <= compliance_limit).mean(
-            ) * 100 if 'COD_Final_Pred_pH' in filtered_df.columns and not filtered_df['COD_Final_Pred_pH'].isna().all() else 0)
-            st.metric(t('kpi_compliance_header'), f"{compliance_pct:.1f}%")
+        st.markdown("---")
 
-            st.markdown("---")
-            # Stack KPI cards vertically
-            stages = {"UASB": ("COD_UASB_Eff", "COD_UASB_Pred"), "Filter": ("COD_Filt_Eff", "COD_Filt_Pred"), "RBC (Orig)": (
-                "COD_Final", "COD_Final_Pred_Orig"), "RBC (pH Mod)": ("COD_Final", "COD_Final_Pred_pH")}
-            stage_icons = {"UASB": "🦠", "Filter": "✨",
-                           "RBC (Orig)": "🔄", "RBC (pH Mod)": "🌿"}
-            for name, (actual_col, pred_col) in stages.items():
+        # --- Section 1: Key Performance Indicators ---
+        st.subheader(f"🎯 {t('kpi_header')}")
+        kpi_cols = st.columns(4)
+        stages = {"UASB": ("COD_UASB_Eff", "COD_UASB_Pred"), "Filter": ("COD_Filt_Eff", "COD_Filt_Pred"), "RBC (Orig)": (
+            "COD_Final", "COD_Final_Pred_Orig"), "RBC (pH Mod)": ("COD_Final", "COD_Final_Pred_pH")}
+        stage_icons = {"UASB": "🦠", "Filter": "✨",
+                       "RBC (Orig)": "🔄", "RBC (pH Mod)": "🌿"}
+
+        for i, (name, (actual_col, pred_col)) in enumerate(stages.items()):
+            with kpi_cols[i]:
                 if pred_col in filtered_df.columns:
                     valid_df = filtered_df.dropna(
                         subset=[actual_col, pred_col])
@@ -600,34 +607,56 @@ if st.session_state.reactor:
                         create_kpi_card(icon=stage_icons.get(
                             name, "📊"), title=name, r2=r2, rmse=rmse, p_value=p_value)
 
-        with col2:
-            log_y = st.checkbox(t('log_axis_toggle'))
-            ts_chart = plot_interactive_timeseries(
-                filtered_df, compliance_limit, log_y)
-            st.plotly_chart(ts_chart, use_container_width=True)
+        # --- Section 2: Time-Series Analysis ---
+        st.markdown("<div class='section-container'>", unsafe_allow_html=True)
+        st.subheader(f"📈 {t('timeseries_header')}")
 
-        with col3:
-            st.subheader(t('parity_header'))
-            stage_choice = st.selectbox(
-                "Select Stage", ["UASB", "Filter", "RBC (Orig)", "RBC (pH Mod)"])
-            pred_dict, actual = ({"UASB": "COD_UASB_Pred"}, "COD_UASB_Eff") if stage_choice == "UASB" else ({"Filter": "COD_Filt_Pred"}, "COD_Filt_Eff") if stage_choice == "Filter" else (
-                {"Original": "COD_Final_Pred_Orig"}, "COD_Final") if stage_choice == "RBC (Orig)" else ({"pH Model": "COD_Final_Pred_pH"}, "COD_Final")
+        # Controls for the time-series chart
+        ts_control_cols = st.columns([2, 1, 1])
+        with ts_control_cols[0]:
+            compliance_limit = st.number_input(
+                t('compliance_input'), value=350, min_value=0, step=25)
+        with ts_control_cols[1]:
+            compliance_pct = ((filtered_df['COD_Final_Pred_pH'] <= compliance_limit).mean(
+            ) * 100 if 'COD_Final_Pred_pH' in filtered_df.columns and not filtered_df['COD_Final_Pred_pH'].isna().all() else 0)
+            st.metric(t('kpi_compliance_header'), f"{compliance_pct:.1f}%")
+        with ts_control_cols[2]:
+            log_y = st.checkbox(t('log_axis_toggle'), key='log_y_ts')
 
+        # Time-series chart
+        ts_chart = plot_interactive_timeseries(
+            filtered_df, compliance_limit, log_y)
+        st.plotly_chart(ts_chart, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+
+        # --- Section 3: Parity & Error Analysis ---
+        st.markdown("<div class='section-container'>", unsafe_allow_html=True)
+        st.subheader(f"📉 {t('parity_header')}")
+
+        stage_choice = st.selectbox(
+            "Select Stage to Analyze", ["UASB", "Filter", "RBC (Orig)", "RBC (pH Mod)"])
+        pred_dict, actual = ({"UASB": "COD_UASB_Pred"}, "COD_UASB_Eff") if stage_choice == "UASB" else ({"Filter": "COD_Filt_Pred"}, "COD_Filt_Eff") if stage_choice == "Filter" else (
+            {"Original": "COD_Final_Pred_Orig"}, "COD_Final") if stage_choice == "RBC (Orig)" else ({"pH Model": "COD_Final_Pred_pH"}, "COD_Final")
+
+        par_col, err_col = st.columns(2)
+        with par_col:
             parity_chart = plot_interactive_parity(
                 filtered_df, stage_choice, actual, pred_dict)
             st.plotly_chart(parity_chart, use_container_width=True)
-
+        with err_col:
             error_dfs = [pd.DataFrame({"Error": filtered_df[pred_col] - filtered_df[actual], "Model": model_name}).dropna()
                          for model_name, pred_col in pred_dict.items() if pred_col in filtered_df.columns]
             if error_dfs:
                 full_error_df = pd.concat(error_dfs)
                 fig_hist = px.histogram(full_error_df, x="Error", color="Model",
-                                        marginal="box", barmode="overlay", title="Error Distribution", height=250,
+                                        marginal="box", barmode="overlay", title="<b>Error Distribution</b>", height=450,
                                         template="plotly_white")
                 fig_hist.update_layout(margin=dict(t=40, b=40))
                 fig_hist.add_vline(x=0, line_dash="dash", line_color="red")
                 st.plotly_chart(fig_hist, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
+        # --- Section 4: Data Table ---
         st.markdown("---")
         st.header(t('filtered_data_header'))
         st.dataframe(filtered_df)
@@ -694,14 +723,14 @@ if st.session_state.reactor:
         anim_class = get_animated_class()
         st.markdown(f"<div class='{anim_class}'>", unsafe_allow_html=True)
         st.header(t('methane_header'))
-        filtered_df = df_results[(df_results['Day'] >= st.session_state.get('date_slider_dashboard', (df_results['Day'].min(), df_results['Day'].max()))[
-                                  0]) & (df_results['Day'] <= st.session_state.get('date_slider_dashboard', (df_results['Day'].min(), df_results['Day'].max()))[1])]
-        uasb_cod_removed = (filtered_df['COD_in'] - filtered_df['COD_UASB_Pred']).mean(
-        ) if 'COD_UASB_Pred' in filtered_df and not filtered_df.empty else 0
+        filtered_df_methane = df_results[(df_results['Day'] >= selected_days[0]) & (
+            df_results['Day'] <= selected_days[1])]
+        uasb_cod_removed = (filtered_df_methane['COD_in'] - filtered_df_methane['COD_UASB_Pred']).mean(
+        ) if 'COD_UASB_Pred' in filtered_df_methane and not filtered_df_methane.empty else 0
         uasb_volume = st.number_input(
             t('uasb_volume_label'), value=25.0, min_value=0.1)
-        avg_flow_rate = uasb_volume / (filtered_df['HRT_UASB'].mean(
-        ) if not filtered_df.empty and 'HRT_UASB' in filtered_df and filtered_df['HRT_UASB'].mean() > 0 else 1)
+        avg_flow_rate = uasb_volume / (filtered_df_methane['HRT_UASB'].mean(
+        ) if not filtered_df_methane.empty and 'HRT_UASB' in filtered_df_methane and filtered_df_methane['HRT_UASB'].mean() > 0 else 1)
         cod_mass_removed_kg_day = (uasb_cod_removed * avg_flow_rate) / 1000
         methane_yield = st.slider(
             t('methane_yield_label'), 0.20, 0.40, 0.35, 0.01)
@@ -945,6 +974,5 @@ if st.session_state.reactor:
 
 else:
     st.info(t('welcome_message'))
-    # You might want to have this image locally in your repo
     st.image("Diagram.png", caption="Diagram of the multi-stage treatment process.",
              use_container_width=True)
