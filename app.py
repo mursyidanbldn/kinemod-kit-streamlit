@@ -466,7 +466,7 @@ if uploaded_file:
     data_content = uploaded_file.getvalue()
 elif use_default_data:
     try:
-        url = 'https://raw.githubusercontent.com/RizkyBaldan/KINEMOD-KIT/main/Model_Data.csv'
+        url = 'https://raw.githubusercontent.com/mursyidanbldn/kinemod-kit-streamlit/refs/heads/main/Model_Data.csv'
         response = requests.get(url)
         # Will raise an HTTPError if the HTTP request returned an unsuccessful status code
         response.raise_for_status()
