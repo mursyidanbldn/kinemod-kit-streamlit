@@ -635,8 +635,8 @@ def display_model_details_tab(reactor, data_content):
                             'Parameter')['Value'])
                         p_rbc_ph = dict(edited_params_df[edited_params_df['Model'] == 'RBC (pH)'].set_index(
                             'Parameter')['Value'])
-                        new_df = reactor.run_predictions_with_new_params(pd.read_csv(
-                            io.BytesIO(data_content), sep=';'), p_uasb, p_filter, p_rbc_o, p_rbc_ph)
+                        new_df = reactor.run_predictions_with_new_params(
+                            reactor.df, p_uasb, p_filter, p_rbc_o, p_rbc_ph)
                         st.session_state.reactor.df = new_df
                         st.success("Predictions updated!")
     with eq_tab:
