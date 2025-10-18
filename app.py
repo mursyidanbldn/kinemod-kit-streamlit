@@ -26,7 +26,7 @@ translations = {
     "en": {
         "title": "KINEMOD-KIT", "subtitle": "UASB-FILTRATION-RBC REACTOR KINETIC MODELING KIT",
         "author_line": "By Rizky Mursyidan Baldan | Last Updated: {}",
-        "tabs": ["📊 Dashboard", "🔬 Model Details", "🍃 Methane & Energy", "🔬 Sensitivity", "⚙️ Optimizer", "❓ Help"],
+        "tabs": ["🏠 Home", "📊 Dashboard", "🔬 Model Details", "🍃 Methane & Energy", "🔬 Sensitivity", "⚙️ Optimizer", "❓ Help"],
         "dashboard_header": "Performance Dashboard",
         "welcome_message": "👋 **Welcome!** Please upload your data or select the option to use the default dataset in the sidebar to begin.",
         "sidebar_controls": "⚙️ Controls", "sidebar_upload": "Upload data (CSV)", "sidebar_upload_help": "Upload a custom `Model_Data.csv` file.",
@@ -74,7 +74,7 @@ translations = {
     "id": {
         "title": "KINEMOD-KIT", "subtitle": "KIT PEMODELAN KINETIK REAKTOR UASB-FILTRASI-RBC",
         "author_line": "Oleh Rizky Mursyidan Baldan | Terakhir Diperbarui: {}",
-        "tabs": ["📊 Dasbor", "🔬 Detail Model", "🍃 Metana & Energi", "🔬 Sensitivitas", "⚙️ Pengoptimal", "❓ Bantuan"],
+        "tabs": ["🏠 Beranda", "📊 Dasbor", "🔬 Detail Model", "🍃 Metana & Energi", "🔬 Sensitivitas", "⚙️ Pengoptimal", "❓ Bantuan"],
         "dashboard_header": "Dasbor Kinerja",
         "welcome_message": "👋 **Selamat datang!** Silakan unggah data Anda atau pilih opsi untuk menggunakan dataset default di bilah sisi untuk memulai.",
         "sidebar_controls": "⚙️ Kontrol", "sidebar_upload": "Unggah data (CSV)", "sidebar_upload_help": "Unggah file `Model_Data.csv` kustom.",
@@ -215,7 +215,7 @@ def run_full_analysis(_uploaded_file_content, config):
 
 
 @st.cache_data
-def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config, cache_buster=None):
+def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config):
     data_buffer = io.BytesIO(_uploaded_file_content)
     reactor = IntegratedReactor(data_buffer, config["reactor_constants"])
     reactor.load_and_prepare_data()
@@ -325,8 +325,6 @@ def create_kpi_card(icon, title, r2, rmse, p_value):
         "red", "Significant")
     st.markdown(f"""<div class="kpi-card"><div class="card-header"><div class="kpi-icon">{icon}</div><div class="kpi-title">{title}</div></div><div><div style="display:flex; justify-content:space-between;"><div><div class="metric-label">R²</div><div class="metric-value">{r2:.3f}</div></div><div style="text-align:right;"><div class="metric-label">RMSE</div><div class="metric-value">{rmse:.1f}</div></div></div></div><div class="anova"><span class="anova-label">ANOVA p-value:</span><span class="anova-value">{p_value:.3f}</span><span class="badge {sig_class}">{sig_label}</span></div></div>""", unsafe_allow_html=True)
 
-# FIX: Added the three missing helper functions back into the app.
-
 
 def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_rbc_ph):
     st.markdown("""<style> .equation-card { background-color: #F0F2F6; border-radius: 10px; padding: 10px; margin-bottom: 0px; border: 1px solid #E0E0E0; } .equation-card .title { font-weight: bold; font-size: 1.1em; margin-bottom: 15px; } .equation-card .variables { font-size: 0.9em; margin-top: 15px; columns: 2; -webkit-columns: 2; -moz-columns: 2; } </style> """, unsafe_allow_html=True)
@@ -361,7 +359,6 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
             fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}{{ \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}''')
 
 
-# @st.cache_data
 def plot_gsa_results(_mi_df, _si, _problem):
     fig = make_subplots(rows=1, cols=2, subplot_titles=(
         'Morris Elementary Effects', 'Sobol Sensitivity Indices'))
@@ -383,7 +380,6 @@ def plot_gsa_results(_mi_df, _si, _problem):
     return fig
 
 
-# @st.cache_data
 def plot_mc_results(_results_df):
     df_sorted = _results_df.sort_values(
         by="Spearman_Correlation", key=abs, ascending=True)
@@ -398,6 +394,97 @@ def plot_mc_results(_results_df):
 # ==============================================================================
 # 5. TAB-SPECIFIC DISPLAY FUNCTIONS (MODULAR UI)
 # ==============================================================================
+
+
+def show_welcome_page():
+    """
+    Displays the Welcome Page (Home tab) of the application.
+    This page serves as a guide for first-time users, explaining the app's purpose,
+    data requirements, and features.
+    """
+
+    # --- Page Title and Introduction ---
+    st.title("🧪 Welcome to KINEMOD-KIT")
+    st.subheader("An Integrated Tool for Wastewater Treatment Modeling")
+
+    st.markdown("""
+        This application provides an end-to-end platform for the kinetic modeling and performance analysis of a three-stage POME (Palm Oil Mill Effluent) treatment system, consisting of **UASB**, **Filtration**, and **RBC** reactors.
+    """)
+    st.divider()
+
+    # --- Use columns for a centered, focused layout ---
+    _, mid_col, _ = st.columns([1, 3, 1])
+    with mid_col:
+
+        # --- Purpose Section ---
+        st.header("🧭 Purpose")
+        st.markdown("""
+            The primary goal of KINEMOD-KIT is to empower engineers and researchers by:
+            - **Calibrating** kinetic models against experimental data.
+            - **Visualizing** key performance indicators (KPIs), time-series trends, and parity plots.
+            - **Analyzing** model sensitivity to parameter uncertainty through GSA and Monte Carlo simulations.
+            - **Optimizing** operational parameters to achieve specific treatment goals.
+        """)
+
+        # --- Diagram Section ---
+        st.header("🧩 System Diagram")
+        # Ensure the 'assets' folder is in the same directory as app.py or adjust path
+        try:
+            # Assuming diagram is in the root for simplicity based on original code.
+            st.image("Diagram.png", use_column_width=True,
+                     caption="System Workflow and Model Structure")
+        except FileNotFoundError:
+            st.warning(
+                "`Diagram.png` not found. Please ensure the image is in the root directory.")
+
+    st.divider()
+
+    # --- How to Get Started Section ---
+    st.header("🚀 How to Get Started")
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        # --- Data Input Guide ---
+        with st.container(border=True):
+            st.subheader("📥 1. Provide Your Data")
+            st.markdown("""
+                The first step is to load your operational data. You have two options in the sidebar:
+                1.  **Upload a CSV file:** Your data must contain the required columns.
+                2.  **Use the default dataset:** A pre-loaded example file will be used.
+
+                **File Requirements:**
+                - **Format:** CSV (`.csv`) with semicolon (`;`) separators.
+                - **Required Columns:** `Day`, `COD_in`, `HRT_UASB`, `VFA_Eff`, `ALK_Eff`, `TSS_UASB_Eff`, `TSS_Filt_Eff`, `COD_UASB_Eff`, `COD_Filt_Eff`, `COD_Final`, `Xa`, `Xs`, `pH_Eff_RBC`, `Steady_State`.
+            """)
+            st.info(
+                "You can upload a new file at any time to restart the analysis with different data.", icon="ℹ️")
+
+    with col2:
+        # --- Running the Analysis Guide ---
+        with st.container(border=True):
+            st.subheader("⚙️ 2. Calibrate & Analyze")
+            st.markdown("""
+                Once your data is loaded, use the sidebar to **Calibrate** the models. After calibration, explore the tabs:
+
+                - **Dashboard:** Your main hub for KPIs (`R²`, `RMSE`), time-series graphs, and model performance summaries.
+                - **Model Details:** View and edit calibrated parameters and see the final kinetic equations.
+                - **Sensitivity:** Perform GSA and Monte Carlo simulations to see which parameters impact the results most.
+                - **Optimizer:** Find the optimal operational settings to minimize the final effluent COD.
+            """)
+            st.warning(
+                "Calibration is a required step before you can view results in the other tabs.", icon="⚠️")
+
+    st.divider()
+
+    # --- Tips for Smooth Use ---
+    st.header("💡 Tips for Smooth Use")
+    tips_cols = st.columns(3)
+    tips_cols[0].success(
+        "**Correct Column Names:** Ensure your uploaded CSV file's column headers exactly match the required names.", icon="✔️")
+    tips_cols[1].success(
+        "**Persistent Data:** Switch between tabs anytime. Your uploaded data and calibration results will be kept in memory.", icon="🧠")
+    tips_cols[2].success(
+        "**Recalibrate as Needed:** If you adjust advanced parameters in the sidebar, remember to click **Calibrate** again.", icon="🚀")
 
 
 def display_dashboard_tab(reactor):
@@ -568,15 +655,6 @@ def display_sensitivity_tab(reactor, data_content, config):
         sa_type, sa_model = (st.selectbox(t('sa_type_select'), ["GSA", "Monte Carlo"]), st.selectbox(t('sa_model_select'), [
                              "RBC Original", "RBC pH-Modified"])) if analysis_mode == t('sa_mode_specific') else (None, None)
 
-        # DEBUG: Add verification expander
-        with st.expander("🕵️‍♂️ Debug Info: Verify Parameters"):
-            if sa_model:
-                model_key_debug = 'ph' if 'pH' in sa_model else 'orig'
-                rbc_params_debug = reactor.params_rbc_ph if model_key_debug == 'ph' else reactor.params_rbc_orig
-                st.write(f"**Selected Model:** `{sa_model}`")
-                st.write("**RBC Parameters to be used in analysis:**")
-                st.json(rbc_params_debug)
-
         if st.button(t('run_sa_button'), type="primary", use_container_width=True):
             if data_content:
                 st.session_state.sa_results = {}
@@ -598,7 +676,7 @@ def display_sensitivity_tab(reactor, data_content, config):
                                 analysis_type=type_name, model_key=model_key,
                                 params_uasb=reactor.params_uasb, params_filter=reactor.params_filter,
                                 rbc_params=rbc_params_to_use, _uploaded_file_content=data_content,
-                                config=config, cache_buster=time.time())
+                                config=config)
                             st.session_state.sa_results[f"{type_name}_{model_key}"] = {
                                 'error': error, 'data': data, 'type': type_name, 'model_name': model_name}
                     progress_bar.progress(1.0, text="All analyses complete!")
@@ -613,12 +691,11 @@ def display_sensitivity_tab(reactor, data_content, config):
                             analysis_type=sa_type, model_key=model_key,
                             params_uasb=reactor.params_uasb, params_filter=reactor.params_filter,
                             rbc_params=rbc_params_to_use, _uploaded_file_content=data_content,
-                            config=config, cache_buster=time.time())
-                        st.session_state.sa_results[f"{sa_type}_{model_key}"] = {
+                            config=config)
+                        st.session_state.sa_results[f"{type_name}_{model_key}"] = {
                             'error': error, 'data': data, 'type': sa_type, 'model_name': sa_model}
                 st.success("Analysis complete!")
     with result_col:
-        # (The rest of the function remains the same)
         if st.session_state.get('sa_results'):
             for key, result in st.session_state.sa_results.items():
                 if result['error']:
@@ -758,7 +835,9 @@ def main():
     # --- Main App Display ---
     if st.session_state.reactor:
         tab_titles = t('tabs')
-        tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(tab_titles)
+        tab0, tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(tab_titles)
+        with tab0:
+            show_welcome_page()
         with tab1:
             display_dashboard_tab(st.session_state.reactor)
         with tab2:
@@ -773,9 +852,8 @@ def main():
         with tab6:
             display_help_tab()
     else:
-        st.info(t('welcome_message'))
-        st.image("Diagram.png", caption="Diagram of the multi-stage treatment process.",
-                 use_container_width=True)
+        # Show only the welcome page before calibration
+        show_welcome_page()
 
 
 if __name__ == "__main__":
