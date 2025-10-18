@@ -419,7 +419,8 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                     p = params_rbc_orig
                     st.markdown("<h6>RBC v1.0 (Original)</h6>",
                                 unsafe_allow_html=True)
-                    st.latex(fr'''\mu_a = \dfrac{{\textcolor{{#FF9F0A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF9F0A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \text{Oxygen Term} \right)''')
+                    st.latex(
+                        fr'''\mu_a = \dfrac{{\textcolor{{#FF9F0A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF9F0A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \mathbf{{\text{{Oxygen Term}}}}\right)''')
 
                 if params_rbc_ph:
                     p = params_rbc_ph
@@ -430,7 +431,8 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                     st.info(
                         "This model enhances the original by adding a pH inhibition factor `τ_pH`.", icon="💡")
                     st.latex(fr'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exponent_val:.2f}}} }}{{ 1 + 10^{{pH - \textcolor{{#FF453A}}{{{p.get('pH_max', 0):.2f}}}}} + 10^{{\textcolor{{#FF453A}}{{{p.get('pH_min', 0):.2f}}} - pH}} }}''')
-                    st.latex(fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \text{Oxygen Term} \right)''')
+                    st.latex(
+                        fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \mathbf{{\text{{Oxygen Term}}}}\right)''')
 
                 st.markdown(
                     '<div class="legend-title">Variables</div>', unsafe_allow_html=True)
