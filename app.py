@@ -214,14 +214,23 @@ def run_full_analysis(_uploaded_file_content, config):
 
 
 @st.cache_data
-def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, params_rbc_orig, params_rbc_ph, _uploaded_file_content, config):
+def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config):
     data_buffer = io.BytesIO(_uploaded_file_content)
     reactor = IntegratedReactor(data_buffer, config["reactor_constants"])
     reactor.load_and_prepare_data()
-    reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph = params_uasb, params_filter, params_rbc_orig, params_rbc_ph
+
+    # We only need to set the parameters that are actually used in the analysis
+    reactor.params_uasb = params_uasb
+    reactor.params_filter = params_filter
+    if model_key == 'ph':
+        reactor.params_rbc_ph = rbc_params
+    else:
+        reactor.params_rbc_orig = rbc_params
     reactor.params_estimated = True
-    params = {**params_uasb, **params_filter, **
-              (params_rbc_ph if model_key == 'ph' else params_rbc_orig)}
+
+    # The logic here becomes much simpler and more direct
+    params = {**params_uasb, **params_filter, **rbc_params}
+
     if not params:
         return "No parameters available for the selected model.", None
     param_keys = sorted(params.keys())
@@ -570,16 +579,41 @@ def display_sensitivity_tab(reactor, data_content, config):
                             run_count = i * len(all_types) + j + 1
                             progress_bar.progress(
                                 run_count / total_runs, text=f"Running {type_name} for {model_name}... ({run_count}/{total_runs})")
+                            if model_key == 'ph':
+                                rbc_params_to_use = reactor.params_rbc_ph
+                            else:
+                                rbc_params_to_use = reactor.params_rbc_orig
+
                             error, data = run_sensitivity_analysis(
-                                type_name, model_key, reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph, data_content, config)
+                                analysis_type=type_name,
+                                model_key=model_key,
+                                params_uasb=reactor.params_uasb,
+                                params_filter=reactor.params_filter,
+                                rbc_params=rbc_params_to_use,
+                                _uploaded_file_content=data_content,
+                                config=config
+                            )
                             st.session_state.sa_results[f"{type_name}_{model_key}"] = {
                                 'error': error, 'data': data, 'type': type_name, 'model_name': model_name}
                     progress_bar.progress(1.0, text="All analyses complete!")
                 else:
                     model_key = 'ph' if 'pH' in sa_model else 'orig'
+
+                    if model_key == 'ph':
+                        rbc_params_to_use = reactor.params_rbc_ph
+                    else:
+                        rbc_params_to_use = reactor.params_rbc_orig
+
                     with st.spinner(f"Running {sa_type} for {sa_model}..."):
                         error, data = run_sensitivity_analysis(
-                            sa_type, model_key, reactor.params_uasb, reactor.params_filter, reactor.params_rbc_orig, reactor.params_rbc_ph, data_content, config)
+                            analysis_type=sa_type,
+                            model_key=model_key,
+                            params_uasb=reactor.params_uasb,
+                            params_filter=reactor.params_filter,
+                            rbc_params=rbc_params_to_use,
+                            _uploaded_file_content=data_content,
+                            config=config
+                        )
                         st.session_state.sa_results[f"{sa_type}_{model_key}"] = {
                             'error': error, 'data': data, 'type': sa_type, 'model_name': sa_model}
                 st.success("Analysis complete!")
