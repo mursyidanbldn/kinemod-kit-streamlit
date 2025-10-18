@@ -11,6 +11,7 @@ from scipy import stats
 from scipy.optimize import minimize
 import json
 import io
+import time
 
 from model_logic import IntegratedReactor
 
@@ -190,6 +191,42 @@ st.markdown(GLOBAL_STYLES, unsafe_allow_html=True)
 # ==============================================================================
 # 3. Caching & Backend Logic
 # ==============================================================================
+
+
+@st.cache_data
+def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config, cache_buster=None):
+    data_buffer = io.BytesIO(_uploaded_file_content)
+    reactor = IntegratedReactor(data_buffer, config["reactor_constants"])
+    reactor.load_and_prepare_data()
+
+    # We only need to set the parameters that are actually used in the analysis
+    reactor.params_uasb = params_uasb
+    reactor.params_filter = params_filter
+    if model_key == 'ph':
+        reactor.params_rbc_ph = rbc_params
+    else:
+        reactor.params_rbc_orig = rbc_params
+    reactor.params_estimated = True
+
+    # The logic here becomes much simpler and more direct
+    params = {**params_uasb, **params_filter, **rbc_params}
+
+    if not params:
+        return "No parameters available for the selected model.", None
+    param_keys = sorted(params.keys())
+    failure_message = "Analysis failed: The model solver could not converge for most parameter variations."
+    if analysis_type == 'GSA':
+        Mi, Si, problem = reactor._execute_gsa(params, param_keys, model_key)
+        if Mi is None:
+            return failure_message, None
+        return None, {'Mi': Mi.to_df(), 'Si': Si, 'problem': problem}
+    elif analysis_type == 'Monte Carlo':
+        results_df, samples_df = reactor._execute_mc(
+            params, param_keys, model_key)
+        if results_df is None:
+            return failure_message, None
+        return None, {'mc_results': results_df, 'mc_samples': samples_df}
+    return "Invalid analysis type", None
 
 
 @st.cache_data
@@ -566,6 +603,16 @@ def display_sensitivity_tab(reactor, data_content, config):
             'sa_mode_specific'), t('sa_mode_all')), key='sa_mode')
         sa_type, sa_model = (st.selectbox(t('sa_type_select'), ["GSA", "Monte Carlo"]), st.selectbox(t('sa_model_select'), [
                              "RBC Original", "RBC pH-Modified"])) if analysis_mode == t('sa_mode_specific') else (None, None)
+
+        # DEBUG: Add verification expander
+        with st.expander("🕵️‍♂️ Debug Info: Verify Parameters"):
+            if sa_model:
+                model_key_debug = 'ph' if 'pH' in sa_model else 'orig'
+                rbc_params_debug = reactor.params_rbc_ph if model_key_debug == 'ph' else reactor.params_rbc_orig
+                st.write(f"**Selected Model:** `{sa_model}`")
+                st.write("**RBC Parameters to be used in analysis:**")
+                st.json(rbc_params_debug)
+
         if st.button(t('run_sa_button'), type="primary", use_container_width=True):
             if data_content:
                 st.session_state.sa_results = {}
@@ -575,49 +622,39 @@ def display_sensitivity_tab(reactor, data_content, config):
                     progress_bar, total_runs = st.progress(
                         0, text="Starting all analyses..."), len(all_types) * len(all_models)
                     for i, (model_name, model_key) in enumerate(all_models.items()):
+                        if model_key == 'ph':
+                            rbc_params_to_use = reactor.params_rbc_ph
+                        else:
+                            rbc_params_to_use = reactor.params_rbc_orig
                         for j, type_name in enumerate(all_types):
                             run_count = i * len(all_types) + j + 1
                             progress_bar.progress(
                                 run_count / total_runs, text=f"Running {type_name} for {model_name}... ({run_count}/{total_runs})")
-                            if model_key == 'ph':
-                                rbc_params_to_use = reactor.params_rbc_ph
-                            else:
-                                rbc_params_to_use = reactor.params_rbc_orig
-
                             error, data = run_sensitivity_analysis(
-                                analysis_type=type_name,
-                                model_key=model_key,
-                                params_uasb=reactor.params_uasb,
-                                params_filter=reactor.params_filter,
-                                rbc_params=rbc_params_to_use,
-                                _uploaded_file_content=data_content,
-                                config=config
-                            )
+                                analysis_type=type_name, model_key=model_key,
+                                params_uasb=reactor.params_uasb, params_filter=reactor.params_filter,
+                                rbc_params=rbc_params_to_use, _uploaded_file_content=data_content,
+                                config=config, cache_buster=time.time())
                             st.session_state.sa_results[f"{type_name}_{model_key}"] = {
                                 'error': error, 'data': data, 'type': type_name, 'model_name': model_name}
                     progress_bar.progress(1.0, text="All analyses complete!")
                 else:
                     model_key = 'ph' if 'pH' in sa_model else 'orig'
-
                     if model_key == 'ph':
                         rbc_params_to_use = reactor.params_rbc_ph
                     else:
                         rbc_params_to_use = reactor.params_rbc_orig
-
                     with st.spinner(f"Running {sa_type} for {sa_model}..."):
                         error, data = run_sensitivity_analysis(
-                            analysis_type=sa_type,
-                            model_key=model_key,
-                            params_uasb=reactor.params_uasb,
-                            params_filter=reactor.params_filter,
-                            rbc_params=rbc_params_to_use,
-                            _uploaded_file_content=data_content,
-                            config=config
-                        )
+                            analysis_type=sa_type, model_key=model_key,
+                            params_uasb=reactor.params_uasb, params_filter=reactor.params_filter,
+                            rbc_params=rbc_params_to_use, _uploaded_file_content=data_content,
+                            config=config, cache_buster=time.time())
                         st.session_state.sa_results[f"{sa_type}_{model_key}"] = {
                             'error': error, 'data': data, 'type': sa_type, 'model_name': sa_model}
                 st.success("Analysis complete!")
     with result_col:
+        # (The rest of the function remains the same)
         if st.session_state.get('sa_results'):
             for key, result in st.session_state.sa_results.items():
                 if result['error']:
