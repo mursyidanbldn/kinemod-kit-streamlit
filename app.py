@@ -327,133 +327,60 @@ def create_kpi_card(icon, title, r2, rmse, p_value):
 
 
 def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_rbc_ph):
-    st.markdown("""
-    <style>
-        .equation-container {
-            background-color: #FFFFFF;
-            border: 1px solid #E0E0E0;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            transition: all 0.3s ease-in-out;
-        }
-        .equation-container:hover {
-            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
-            transform: translateY(-3px);
-        }
-        .equation-title {
-            font-weight: 600;
-            font-size: 1.2rem;
-            margin-bottom: 1rem;
-            border-bottom: 2px solid #F0F2F6;
-            padding-bottom: 0.5rem;
-        }
-        .legend-title {
-            font-weight: 600;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .legend-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 0.5rem 1.5rem;
-            font-size: 0.9rem;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
     st.info("These are the governing equations for each model stage, populated with the kinetic parameters derived from your data.", icon="🧪")
     st.markdown("---")
 
     col1, col2 = st.columns(2, gap="large")
 
     with col1:
-        # --- UASB Card ---
-        st.markdown('<div class="equation-container">', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="equation-title">🦠 {t("help_uasb_title")}</div>', unsafe_allow_html=True)
-        if params_uasb:
-            st.latex(r''' SRR = \left( \dfrac{{ {U_max:.3f} \cdot OLR }}{{ {K_B:.3f} + OLR }} \right) \cdot \left( \dfrac{{1}}{{ 1 + \dfrac{{VFA/ALK}}{{ {K_I:.3f} }} }} \right) '''.format(
-                U_max=params_uasb.get('U_max', 0),
-                K_B=params_uasb.get('K_B', 0),
-                K_I=params_uasb.get('K_I', 0)
-            ).replace('{1}', '1'))  # Quick fix for format issue
-        st.markdown('<div class="legend-title">Variables</div>',
-                    unsafe_allow_html=True)
-        st.markdown("""
-        <div class="legend-grid">
-            <div><b>SRR</b>: Substrate Removal Rate</div>
-            <div><b>OLR</b>: Organic Loading Rate</div>
-            <div><b>VFA/ALK</b>: VFA to Alkalinity Ratio</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.subheader(f'🦠 {t("help_uasb_title")}')
+            if params_uasb:
+                st.latex(fr'''
+                    SRR = \left( \frac{{ \textcolor{{#0A84FF}}{{{params_uasb.get('U_max', 0):.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{params_uasb.get('K_B', 0):.3f}}} + OLR }} \right) \cdot \left( \frac{{1}}{{ 1 + \frac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{params_uasb.get('K_I', 0):.3f}}} }} }} \right)
+                ''')
+            st.markdown("**Variables:**")
+            st.markdown(
+                "- **SRR**: Substrate Removal Rate\n- **OLR**: Organic Loading Rate\n- **VFA/ALK**: VFA to Alkalinity Ratio")
 
-        # --- Filter Card ---
-        st.markdown('<div class="equation-container">', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="equation-title">✨ {t("help_filter_title")}</div>', unsafe_allow_html=True)
-        if params_filter:
-            st.latex(r'COD_{{Removed}} = {R_cod_tss:.3f} \cdot (TSS_{{in}} - TSS_{{out}}) + {k_ads:.3f} \cdot sCOD_{{in}}'.format(
-                R_cod_tss=params_filter.get('R_cod_tss', 0),
-                k_ads=params_filter.get('k_ads', 0)
-            ))
-        st.markdown('<div class="legend-title">Variables</div>',
-                    unsafe_allow_html=True)
-        st.markdown("""
-        <div class="legend-grid">
-            <div><b>TSS</b>: Total Suspended Solids</div>
-            <div><b>sCOD</b>: Soluble COD</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.subheader(f'✨ {t("help_filter_title")}')
+            if params_filter:
+                st.latex(fr'''
+                    COD_{{Removed}} = \textcolor{{#30D158}}{{{params_filter.get("R_cod_tss", 0):.3f}}} \cdot (TSS_{{in}} - TSS_{{out}}) + \textcolor{{#30D158}}{{{params_filter.get("k_ads", 0):.3f}}} \cdot sCOD_{{in}}
+                ''')
+            st.markdown("**Variables:**")
+            st.markdown(
+                "- **TSS**: Total Suspended Solids\n- **sCOD**: Soluble COD")
 
     with col2:
-        # --- RBC Card ---
-        st.markdown('<div class="equation-container">', unsafe_allow_html=True)
-        st.markdown(
-            f'<div class="equation-title">🔄 {t("help_rbc_title")}</div>', unsafe_allow_html=True)
+        with st.container(border=True):
+            st.subheader(f'🔄 {t("help_rbc_title")}')
+            if params_rbc_orig:
+                p_orig = params_rbc_orig
+                st.markdown("<h6>RBC v1.0 (Original)</h6>",
+                            unsafe_allow_html=True)
+                st.latex(fr'''
+                    \mu_a = \left( \frac{{ \textcolor{{#FF9F0A}}{{{p_orig.get('umxa', 0):.3f}}} \cdot S_e }}{{ \textcolor{{#FF9F0A}}{{{p_orig.get('Ku', 0):.3f}}} + S_e }} \right) \cdot \left( \frac{{ 0.5 \cdot \textcolor{{#FF9F0A}}{{{p_orig.get('Ko', 0):.3f}}} + \textcolor{{#FF9F0A}}{{{p_orig.get('O', 0):.3f}}} }}{{ \textcolor{{#FF9F0A}}{{{p_orig.get('Ko', 0):.3f}}} + \textcolor{{#FF9F0A}}{{{p_orig.get('O', 0):.3f}}} }} \right)
+                ''')
 
-        if params_rbc_orig:
-            p_orig = params_rbc_orig
-            st.markdown("<h6>RBC v1.0 (Original)</h6>", unsafe_allow_html=True)
-            st.latex(r'''\mu_a = \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(
-                umxa=p_orig.get('umxa', 0), Ku=p_orig.get('Ku', 0),
-                Ko=p_orig.get('Ko', 0), O=p_orig.get('O', 0)
-            ))
+            if params_rbc_ph:
+                p_ph = params_rbc_ph
+                exponent_val = 0.5 * \
+                    (p_ph.get('pH_min', 0) - p_ph.get('pH_max', 0))
+                st.markdown("<h6>RBC v1.1 (pH-Inhibited)</h6>",
+                            unsafe_allow_html=True)
+                st.info(
+                    "This model enhances the original by adding a pH inhibition factor `τ_pH`.", icon="💡")
+                st.latex(fr'''
+                    \tau_{{pH}} = \frac{{ 1 + 2 \cdot 10^{{{exponent_val:.2f}}} }}{{ 1 + 10^{{pH - \textcolor{{#FF453A}}{{{p_ph.get('pH_max', 0):.2f}}}}} + 10^{{\textcolor{{#FF453A}}{{{p_ph.get('pH_min', 0):.2f}}} - pH}} }}
+                ''')
+                st.latex(fr'''
+                    \mu_a = \tau_{{pH}} \cdot \left( \frac{{ \textcolor{{#FF453A}}{{{p_ph.get('umxa', 0):.3f}}} \cdot S_e }}{{ \textcolor{{#FF453A}}{{{p_ph.get('Ku', 0):.3f}}} + S_e }} \right) \cdot \left( \frac{{ 0.5 \cdot \textcolor{{#FF453A}}{{{p_ph.get('Ko', 0):.3f}}} + \textcolor{{#FF453A}}{{{p_ph.get('O', 0):.3f}}} }}{{ \textcolor{{#FF453A}}{{{p_ph.get('Ko', 0):.3f}}} + \textcolor{{#FF453A}}{{{p_ph.get('O', 0):.3f}}} }} \right)
+                ''')
 
-        if params_rbc_ph:
-            p_ph = params_rbc_ph
-            exponent_val = 0.5 * \
-                (p_ph.get('pH_min', 0) - p_ph.get('pH_max', 0))
-            st.markdown("<h6>RBC v1.1 (pH-Inhibited)</h6>",
-                        unsafe_allow_html=True)
-            st.info(
-                "This model enhances the original by adding a pH inhibition factor `τ_pH`.", icon="💡")
-            # FIX: Escaped literal braces and passed exponent_val to format
-            st.latex(r'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exp_val:.2f}}} }}{{ 1 + 10^{{pH - {pH_max:.2f}}} + 10^{{{pH_min:.2f} - pH}} }}'''.format(
-                exp_val=exponent_val,
-                pH_max=p_ph.get('pH_max', 0),
-                pH_min=p_ph.get('pH_min', 0)
-            ))
-            st.latex(r'''\mu_a = \tau_{{pH}} \cdot \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(
-                umxa=p_ph.get('umxa', 0), Ku=p_ph.get('Ku', 0),
-                Ko=p_ph.get('Ko', 0), O=p_ph.get('O', 0)
-            ))
-
-        st.markdown('<div class="legend-title">Variables</div>',
-                    unsafe_allow_html=True)
-        st.markdown("""
-        <div class="legend-grid">
-            <div><b>μa</b>: Autotrophic Growth Rate</div>
-            <div><b>Se</b>: Effluent Substrate Conc.</div>
-            <div><b>τ_pH</b>: pH Inhibition Factor</div>
-            <div><b>Ko</b>: Oxygen half-saturation const.</div>
-            <div><b>O</b>: Dissolved Oxygen conc.</div>
-        </div>
-        """, unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+            st.markdown("**Variables:**")
+            st.markdown("- **μa**: Autotrophic Growth Rate\n- **Se**: Effluent Substrate Conc.\n- **τ_pH**: pH Inhibition Factor\n- **Ko**: Oxygen half-saturation const.\n- **O**: Dissolved Oxygen conc.")
 
 
 def plot_gsa_results(_mi_df, _si, _problem):
