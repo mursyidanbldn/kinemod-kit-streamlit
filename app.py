@@ -594,9 +594,21 @@ def display_sensitivity_tab(reactor, data_content, config):
                     if result['type'] == 'GSA' and result['data']:
                         st.plotly_chart(plot_gsa_results(
                             result['data']['Mi'], result['data']['Si'], result['data']['problem']), use_container_width=True, key=f"gsa_chart_{key}")
+                        st.caption(
+                            "Table 1. Global Sensitivity Analysis Results")
+                        sobol_df = pd.DataFrame({'S1': result['data']['Si']['S1'], 'ST': result['data']['Si']['ST'], 'S1_conf': result['data']
+                                                ['Si']['S1_conf'], 'ST_conf': result['data']['Si']['ST_conf']}, index=result['data']['problem']['names'])
+                        st.dataframe(sobol_df)
                     elif result['type'] == 'Monte Carlo' and result['data']:
                         st.plotly_chart(plot_mc_results(
                             result['data']['mc_results']), use_container_width=True, key=f"mc_chart_{key}")
+                        st.caption("Table 2. Monte Carlo Output Summary")
+                        summary_df = result['data']['mc_samples'].describe(
+                        ).transpose()
+                        summary_df['Spearman_Correlation'] = result['data']['mc_results'].set_index(
+                            'Parameter')['Spearman_Correlation']
+                        st.dataframe(
+                            summary_df[['mean', 'std', 'Spearman_Correlation']])
 
 
 def display_optimizer_tab(reactor):
@@ -650,7 +662,7 @@ def display_help_tab():
     with h_tab1:
         st.markdown(f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}<br>**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}<br>**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}<br>**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}", unsafe_allow_html=True)
     with h_tab2:
-        st.markdown(f"**{t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**{t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**{t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**{t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**{t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
+        st.markdown(f"**📊 {t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**🔬 {t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**🍃 {t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**🔬 {t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**⚙️ {t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
     with h_tab3:
         st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
         st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
