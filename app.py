@@ -650,7 +650,7 @@ def display_help_tab():
     with h_tab1:
         st.markdown(f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}<br>**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}<br>**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}<br>**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}", unsafe_allow_html=True)
     with h_tab2:
-        st.markdown(f"**{t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**{t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**{t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**{t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**{t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
+        st.markdown(f"**📊 {t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**🔬 {t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**🍃 {t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**🔬 {t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**⚙️ {t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
     with h_tab3:
         st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
         st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
