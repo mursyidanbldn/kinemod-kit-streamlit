@@ -336,9 +336,14 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
         with st.container(border=True):
             st.subheader(f'🦠 {t("help_uasb_title")}')
             if params_uasb:
-                st.latex(fr'''
-                    SRR = \left( \frac{{ \textcolor{{#0A84FF}}{{{params_uasb.get('U_max', 0):.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{params_uasb.get('K_B', 0):.3f}}} + OLR }} \right) \cdot \left( \frac{{1}}{{ 1 + \frac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{params_uasb.get('K_I', 0):.3f}}} }} }} \right)
-                ''')
+                # FIX: Correctly escape braces for .format() and use .get() for safety
+                st.latex(r'''
+                    SRR = \left( \frac{{ \textcolor{{#0A84FF}}{{{U_max:.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{K_B:.3f}}} + OLR }} \right) \cdot \left( \frac{{1}}{{ 1 + \frac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{K_I:.3f}}} }} }} \right)
+                '''.format(
+                    U_max=params_uasb.get('U_max', 0),
+                    K_B=params_uasb.get('K_B', 0),
+                    K_I=params_uasb.get('K_I', 0)
+                ).replace('{1}', '1'))
             st.markdown("**Variables:**")
             st.markdown(
                 "- **SRR**: Substrate Removal Rate\n- **OLR**: Organic Loading Rate\n- **VFA/ALK**: VFA to Alkalinity Ratio")
@@ -745,6 +750,45 @@ def display_sensitivity_tab(reactor, data_content, config):
                             'Parameter')['Spearman_Correlation']
                         st.dataframe(
                             summary_df[['mean', 'std', 'Spearman_Correlation']])
+
+
+def optimization_objective_function(x, reactor, fixed_params):
+    """
+    Objective function for the optimizer.
+    Takes a vector of operational inputs and returns the predicted final COD.
+    """
+    cod_in, hrt_uasb, hrt_rbc = x
+
+    # Run the simulation chain with the new inputs
+    try:
+        # 1. UASB Stage
+        olr = cod_in / hrt_uasb if hrt_uasb > 0 else 0
+        srr_pred = reactor.uasb_model.predict(
+            (olr, fixed_params['vfa_alk']), reactor.params_uasb)
+        cod_uasb_pred = cod_in - srr_pred * hrt_uasb
+
+        # 2. Filter Stage
+        cod_removed_filt = reactor.filter_model.predict(
+            (fixed_params['tss_in'], fixed_params['tss_out'], cod_uasb_pred), reactor.params_filter)
+        cod_filt_pred = cod_uasb_pred - cod_removed_filt
+
+        # 3. RBC Stage (using the more comprehensive pH model)
+        op_params_rbc = {
+            'So': cod_filt_pred,
+            'HRT_days': hrt_rbc / 24.0,
+            'Xa': fixed_params['xa'],
+            'Xs': fixed_params['xs'],
+            'pH': fixed_params['ph']
+        }
+        final_pred = reactor.rbc_model_ph.predict(
+            op_params_rbc, reactor.params_rbc_ph)
+
+        # If solver fails, return a large number as a penalty
+        if np.isnan(final_pred):
+            return 1e6
+        return final_pred
+    except Exception:
+        return 1e6
 
 
 def display_optimizer_tab(reactor):
