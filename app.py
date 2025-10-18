@@ -327,36 +327,122 @@ def create_kpi_card(icon, title, r2, rmse, p_value):
 
 
 def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_rbc_ph):
-    st.markdown("""<style> .equation-card { background-color: #F0F2F6; border-radius: 10px; padding: 10px; margin-bottom: 0px; border: 1px solid #E0E0E0; } .equation-card .title { font-weight: bold; font-size: 1.1em; margin-bottom: 15px; } .equation-card .variables { font-size: 0.9em; margin-top: 15px; columns: 2; -webkit-columns: 2; -moz-columns: 2; } </style> """, unsafe_allow_html=True)
-    st.subheader(t('eq_subheader'))
-    if params_uasb:
-        p = params_uasb
-        st.markdown(
-            f"""<div class="equation-card"><div class="title">{t('help_uasb_title')}: Substrate Removal Rate</div></div>""", unsafe_allow_html=True)
-        st.latex(
-            fr''' SRR = \left( \dfrac{{ \textcolor{{#0A84FF}}{{{p['U_max']:.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{p['K_B']:.3f}}} + OLR }} \right) \cdot \left( \dfrac{1}{{ 1 + \dfrac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{p['K_I']:.3f}}} }} }} \right) ''')
-    if params_filter:
-        p = params_filter
-        st.markdown(
-            f"""<div class="equation-card"><div class="title">{t('help_filter_title')}: COD Removal</div></div>""", unsafe_allow_html=True)
-        st.latex(
-            fr'COD_{{Removed}} = \textcolor{{#30D158}}{{{p["R_cod_tss"]:.3f}}} \cdot (TSS_{{in}} - TSS_{{out}}) + \textcolor{{#30D158}}{{{p["k_ads"]:.3f}}} \cdot sCOD_{{in}}')
+    st.markdown("""
+    <style>
+        .equation-container {
+            background-color: #FFFFFF;
+            border: 1px solid #E0E0E0;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            transition: all 0.3s ease-in-out;
+        }
+        .equation-container:hover {
+            box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+            transform: translateY(-3px);
+        }
+        .equation-title {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #F0F2F6;
+            padding-bottom: 0.5rem;
+        }
+        .legend-title {
+            font-weight: 600;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.5rem 1.5rem;
+            font-size: 0.9rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.info("These are the governing equations for each model stage, populated with the kinetic parameters derived from your data.", icon="🧪")
     st.markdown("---")
-    st.markdown("#### RBC Models")
-    if params_rbc_orig:
-        p = params_rbc_orig
-        st.markdown(
-            f"""<div class="equation-card"><div class="title">RBC v1.0 (Original)</div></div>""", unsafe_allow_html=True)
-        st.latex(fr'''\mu_a = \dfrac{{\textcolor{{#FF9F0A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF9F0A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#FF9F0A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF9F0A}}{{{p['O']:.3f}}}}}{{ \textcolor{{#FF9F0A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF9F0A}}{{{p['O']:.3f}}}}}''')
-    if params_rbc_ph:
-        p = params_rbc_ph
-        exponent_val = 0.5 * (p['pH_min'] - p['pH_max'])
-        st.markdown(
-            f"""<div class="equation-card"><div class="title">RBC v1.1 (pH-Inhibited)</div></div>""", unsafe_allow_html=True)
-        st.latex(
-            fr'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exponent_val:.2f}}} }}{{ 1 + 10^{{pH - \textcolor{{#FF453A}}{{{p['pH_max']:.2f}}}}} + 10^{{\textcolor{{#FF453A}}{{{p['pH_min']:.2f}}} - pH}} }}''')
-        st.latex(
-            fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}{{ \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}''')
+
+    col1, col2 = st.columns(2, gap="large")
+
+    with col1:
+        if params_uasb:
+            p = params_uasb
+            with st.container():
+                st.markdown('<div class="equation-container">',
+                            unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="equation-title">🦠 {t("help_uasb_title")}</div>', unsafe_allow_html=True)
+                st.latex(
+                    fr''' SRR = \left( \dfrac{{ \textcolor{{#0A84FF}}{{{p['U_max']:.3f}}} \cdot OLR }}{{ \textcolor{{#0A84FF}}{{{p['K_B']:.3f}}} + OLR }} \right) \cdot \left( \dfrac{1}{{ 1 + \dfrac{{VFA/ALK}}{{ \textcolor{{#0A84FF}}{{{p['K_I']:.3f}}} }} }} \right) ''')
+                st.markdown(
+                    '<div class="legend-title">Variables</div>', unsafe_allow_html=True)
+                st.markdown("""
+                <div class="legend-grid">
+                    <div><b>SRR</b>: Substrate Removal Rate</div>
+                    <div><b>OLR</b>: Organic Loading Rate</div>
+                    <div><b>VFA/ALK</b>: VFA to Alkalinity Ratio</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+
+        if params_filter:
+            p = params_filter
+            with st.container():
+                st.markdown('<div class="equation-container">',
+                            unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="equation-title">✨ {t("help_filter_title")}</div>', unsafe_allow_html=True)
+                st.latex(
+                    fr'COD_{{Removed}} = \textcolor{{#30D158}}{{{p["R_cod_tss"]:.3f}}} \cdot (TSS_{{in}} - TSS_{{out}}) + \textcolor{{#30D158}}{{{p["k_ads"]:.3f}}} \cdot sCOD_{{in}}')
+                st.markdown(
+                    '<div class="legend-title">Variables</div>', unsafe_allow_html=True)
+                st.markdown("""
+                <div class="legend-grid">
+                    <div><b>TSS</b>: Total Suspended Solids</div>
+                    <div><b>sCOD</b>: Soluble COD</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        if params_rbc_orig or params_rbc_ph:
+            with st.container():
+                st.markdown('<div class="equation-container">',
+                            unsafe_allow_html=True)
+                st.markdown(
+                    f'<div class="equation-title">🔄 {t("help_rbc_title")}</div>', unsafe_allow_html=True)
+
+                if params_rbc_orig:
+                    p = params_rbc_orig
+                    st.markdown("<h6>RBC v1.0 (Original)</h6>",
+                                unsafe_allow_html=True)
+                    st.latex(fr'''\mu_a = \dfrac{{\textcolor{{#FF9F0A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF9F0A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \text{Oxygen Term} \right)''')
+
+                if params_rbc_ph:
+                    p = params_rbc_ph
+                    exponent_val = 0.5 * \
+                        (p.get('pH_min', 0) - p.get('pH_max', 0))
+                    st.markdown("<h6>RBC v1.1 (pH-Inhibited)</h6>",
+                                unsafe_allow_html=True)
+                    st.info(
+                        "This model enhances the original by adding a pH inhibition factor `τ_pH`.", icon="💡")
+                    st.latex(fr'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exponent_val:.2f}}} }}{{ 1 + 10^{{pH - \textcolor{{#FF453A}}{{{p.get('pH_max', 0):.2f}}}}} + 10^{{\textcolor{{#FF453A}}{{{p.get('pH_min', 0):.2f}}} - pH}} }}''')
+                    st.latex(fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \left( \text{Oxygen Term} \right)''')
+
+                st.markdown(
+                    '<div class="legend-title">Variables</div>', unsafe_allow_html=True)
+                st.markdown("""
+                <div class="legend-grid">
+                    <div><b>μa</b>: Autotrophic Growth Rate</div>
+                    <div><b>Se</b>: Effluent Substrate Conc.</div>
+                    <div><b>τ_pH</b>: pH Inhibition Factor</div>
+                    <div><b>Oxygen Term</b>: F(O₂, Ko)</div>
+                </div>
+                """, unsafe_allow_html=True)
+                st.markdown('</div>', unsafe_allow_html=True)
 
 
 def plot_gsa_results(_mi_df, _si, _problem):
@@ -774,7 +860,7 @@ def display_help_tab():
     with h_tab1:
         st.markdown(f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}<br>**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}<br>**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}<br>**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}", unsafe_allow_html=True)
     with h_tab2:
-        st.markdown(f"**📊 {t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**🔬 {t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**🍃 {t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**🔬 {t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**⚙️ {t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
+        st.markdown(f"**{t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**{t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**{t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**{t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**{t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
     with h_tab3:
         st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
         st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
