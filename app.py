@@ -361,7 +361,7 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
             fr'''\mu_a = \tau_{{pH}} \cdot \dfrac{{\textcolor{{#FF453A}}{{{p['umxa']:.3f}}} \cdot S_e}}{{\textcolor{{#FF453A}}{{{p['Ku']:.3f}}} + S_e}} \cdot \dfrac{{0.5 \cdot \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}{{ \textcolor{{#FF453A}}{{{p['Ko']:.3f}}} + \textcolor{{#FF453A}}{{{p['O']:.3f}}}}}''')
 
 
-@st.cache_data
+# @st.cache_data
 def plot_gsa_results(_mi_df, _si, _problem):
     fig = make_subplots(rows=1, cols=2, subplot_titles=(
         'Morris Elementary Effects', 'Sobol Sensitivity Indices'))
@@ -383,7 +383,7 @@ def plot_gsa_results(_mi_df, _si, _problem):
     return fig
 
 
-@st.cache_data
+# @st.cache_data
 def plot_mc_results(_results_df):
     df_sorted = _results_df.sort_values(
         by="Spearman_Correlation", key=abs, ascending=True)
