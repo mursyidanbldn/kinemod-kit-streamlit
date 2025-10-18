@@ -375,8 +375,12 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                         unsafe_allow_html=True)
             st.markdown(
                 f'<div class="equation-title">🦠 {t("help_uasb_title")}</div>', unsafe_allow_html=True)
-            st.latex(
-                r''' SRR = \left( \dfrac{{ {U_max:.3f} \cdot OLR }}{{ {K_B:.3f} + OLR }} \right) \cdot \left( \dfrac{1}{{ 1 + \dfrac{{VFA/ALK}}{{ {K_I:.3f} }} }} \right) '''.format(**params_uasb))
+            # FIX: Escaped the literal {1} to {{1}} to avoid format string IndexError
+            st.latex(r''' SRR = \left( \dfrac{{ {U_max:.3f} \cdot OLR }}{{ {K_B:.3f} + OLR }} \right) \cdot \left( \dfrac{{{1}}}{{ 1 + \dfrac{{VFA/ALK}}{{ {K_I:.3f} }} }} \right) '''.format(
+                U_max=params_uasb.get('U_max', 0),
+                K_B=params_uasb.get('K_B', 0),
+                K_I=params_uasb.get('K_I', 0)
+            ))
             st.markdown('<div class="legend-title">Variables</div>',
                         unsafe_allow_html=True)
             st.markdown("""
@@ -394,8 +398,10 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                         unsafe_allow_html=True)
             st.markdown(
                 f'<div class="equation-title">✨ {t("help_filter_title")}</div>', unsafe_allow_html=True)
-            st.latex(
-                r'COD_{{Removed}} = {R_cod_tss:.3f} \cdot (TSS_{{in}} - TSS_{{out}}) + {k_ads:.3f} \cdot sCOD_{{in}}'.format(**params_filter))
+            st.latex(r'COD_{{Removed}} = {R_cod_tss:.3f} \cdot (TSS_{{in}} - TSS_{{out}}) + {k_ads:.3f} \cdot sCOD_{{in}}'.format(
+                R_cod_tss=params_filter.get('R_cod_tss', 0),
+                k_ads=params_filter.get('k_ads', 0)
+            ))
             st.markdown('<div class="legend-title">Variables</div>',
                         unsafe_allow_html=True)
             st.markdown("""
@@ -415,10 +421,13 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                 f'<div class="equation-title">🔄 {t("help_rbc_title")}</div>', unsafe_allow_html=True)
 
             if params_rbc_orig:
+                p_orig = params_rbc_orig
                 st.markdown("<h6>RBC v1.0 (Original)</h6>",
                             unsafe_allow_html=True)
-                st.latex(
-                    r'''\mu_a = \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(**params_rbc_orig))
+                st.latex(r'''\mu_a = \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(
+                    umxa=p_orig.get('umxa', 0), Ku=p_orig.get('Ku', 0),
+                    Ko=p_orig.get('Ko', 0), O=p_orig.get('O', 0)
+                ))
 
             if params_rbc_ph:
                 p_ph = params_rbc_ph
@@ -429,9 +438,14 @@ def display_final_equations(params_uasb, params_filter, params_rbc_orig, params_
                 st.info(
                     "This model enhances the original by adding a pH inhibition factor `τ_pH`.", icon="💡")
                 st.latex(r'''\tau_{{pH}} = \dfrac{{ 1 + 2 \cdot 10^{{{exp_val:.2f}}} }}{{ 1 + 10^{{pH - {pH_max:.2f}}} + 10^{{{pH_min:.2f} - pH}} }}'''.format(
-                    exp_val=exponent_val, **p_ph))
-                st.latex(
-                    r'''\mu_a = \tau_{{pH}} \cdot \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(**p_ph))
+                    exp_val=exponent_val,
+                    pH_max=p_ph.get('pH_max', 0),
+                    pH_min=p_ph.get('pH_min', 0)
+                ))
+                st.latex(r'''\mu_a = \tau_{{pH}} \cdot \left( \dfrac{{ {umxa:.3f} \cdot S_e }}{{ {Ku:.3f} + S_e }} \right) \cdot \left( \dfrac{{ 0.5 \cdot {Ko:.3f} + {O:.3f} }}{{ {Ko:.3f} + {O:.3f} }} \right)'''.format(
+                    umxa=p_ph.get('umxa', 0), Ku=p_ph.get('Ku', 0),
+                    Ko=p_ph.get('Ko', 0), O=p_ph.get('O', 0)
+                ))
 
             st.markdown('<div class="legend-title">Variables</div>',
                         unsafe_allow_html=True)
@@ -862,7 +876,7 @@ def display_help_tab():
     with h_tab1:
         st.markdown(f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}<br>**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}<br>**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}<br>**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}", unsafe_allow_html=True)
     with h_tab2:
-        st.markdown(f"**📊 {t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**🔬 {t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**🍃 {t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**🔬 {t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**⚙️ {t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
+        st.markdown(f"**{t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**{t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**{t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**{t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**{t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
     with h_tab3:
         st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
         st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
