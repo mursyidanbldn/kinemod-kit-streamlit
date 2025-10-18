@@ -194,42 +194,6 @@ st.markdown(GLOBAL_STYLES, unsafe_allow_html=True)
 
 
 @st.cache_data
-def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config, cache_buster=None):
-    data_buffer = io.BytesIO(_uploaded_file_content)
-    reactor = IntegratedReactor(data_buffer, config["reactor_constants"])
-    reactor.load_and_prepare_data()
-
-    # We only need to set the parameters that are actually used in the analysis
-    reactor.params_uasb = params_uasb
-    reactor.params_filter = params_filter
-    if model_key == 'ph':
-        reactor.params_rbc_ph = rbc_params
-    else:
-        reactor.params_rbc_orig = rbc_params
-    reactor.params_estimated = True
-
-    # The logic here becomes much simpler and more direct
-    params = {**params_uasb, **params_filter, **rbc_params}
-
-    if not params:
-        return "No parameters available for the selected model.", None
-    param_keys = sorted(params.keys())
-    failure_message = "Analysis failed: The model solver could not converge for most parameter variations."
-    if analysis_type == 'GSA':
-        Mi, Si, problem = reactor._execute_gsa(params, param_keys, model_key)
-        if Mi is None:
-            return failure_message, None
-        return None, {'Mi': Mi.to_df(), 'Si': Si, 'problem': problem}
-    elif analysis_type == 'Monte Carlo':
-        results_df, samples_df = reactor._execute_mc(
-            params, param_keys, model_key)
-        if results_df is None:
-            return failure_message, None
-        return None, {'mc_results': results_df, 'mc_samples': samples_df}
-    return "Invalid analysis type", None
-
-
-@st.cache_data
 def load_default_data():
     """OPTIMIZATION: Caches the default data file to prevent reading from disk on every rerun."""
     try:
@@ -251,7 +215,7 @@ def run_full_analysis(_uploaded_file_content, config):
 
 
 @st.cache_data
-def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config):
+def run_sensitivity_analysis(analysis_type, model_key, params_uasb, params_filter, rbc_params, _uploaded_file_content, config, cache_buster=None):
     data_buffer = io.BytesIO(_uploaded_file_content)
     reactor = IntegratedReactor(data_buffer, config["reactor_constants"])
     reactor.load_and_prepare_data()
