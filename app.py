@@ -249,28 +249,23 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     fig = make_subplots(rows=3, cols=1, shared_xaxes=True,
                         vertical_spacing=0.1, subplot_titles=("UASB", "Filter", "RBC"))
 
-    marker_style_UASB = dict(
-        symbol='x', size=8, color=model_colors['Measured'])
-    marker_style_Filter = dict(
-        symbol='circle-open', size=8, color=model_colors['Measured'])
-    marker_style_RBC = dict(symbol='square-open', size=8,
-                            color=model_colors['Measured'])
+    marker_style = dict(symbol='x', size=8, color=model_colors['Measured'])
 
     # UASB Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Eff'], mode='markers',
-                  name='UASB Measured', marker=marker_style_UASB), row=1, col=1)
+                  name='UASB Measured', marker=marker_style), row=1, col=1)
     if 'COD_UASB_Pred' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_UASB_Pred'], mode='lines',
                       name='UASB Predicted', line=dict(color=model_colors['UASB'])), row=1, col=1)
     # Filter Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Eff'], mode='markers',
-                  name='Filter Measured', marker=marker_style_Filter), row=2, col=1)
+                  name='Filter Measured', marker=marker_style), row=2, col=1)
     if 'COD_Filt_Pred' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Filt_Pred'], mode='lines',
                       name='Filter Predicted', line=dict(color=model_colors['Filter'])), row=2, col=1)
     # RBC Plot
     fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final'], mode='markers',
-                  name='RBC Measured', marker=marker_style_RBC), row=3, col=1)
+                  name='RBC Measured', marker=marker_style), row=3, col=1)
     if 'COD_Final_Pred_Orig' in df.columns:
         fig.add_trace(go.Scatter(x=df['Day'], y=df['COD_Final_Pred_Orig'], mode='lines',
                       name='RBC Original Pred.', line=dict(color=model_colors['RBC_Orig'])), row=3, col=1)
@@ -281,8 +276,9 @@ def plot_interactive_timeseries(df, compliance_limit=None, log_y=False):
     if compliance_limit:
         fig.add_hline(y=compliance_limit, line_dash="dot", line_color="#FF453A",
                       annotation_text="Compliance Limit", annotation_position="bottom right", row=3, col=1)
-    fig.update_layout(height=1000, title_text=f"<b>{t('timeseries_header')}</b>", hovermode="x unified", legend=dict(
-        orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1))
+    # UI/UX FIX: Reduced height and moved legend for better scannability.
+    fig.update_layout(height=600, title_text=f"<b>{t('timeseries_header')}</b>",
+                      hovermode="x unified", legend=dict(orientation="v", x=1.05, xanchor="left", y=1))
     if log_y:
         fig.update_yaxes(type="log")
     for i in range(1, 4):
@@ -299,6 +295,7 @@ def plot_interactive_parity(df, stage_name, actual_col, pred_cols_dict, rmse):
         return go.Figure().update_layout(title=f'Parity Plot: {stage_name} (No valid data)')
     fig = go.Figure()
     y_true = data.sort_values(by=actual_col)[actual_col]
+    # UI/UX FIX: Changed error band to a light grey.
     fig.add_trace(go.Scatter(x=np.concatenate([y_true, y_true[::-1]]), y=np.concatenate([y_true + rmse, (y_true - rmse)[::-1]]), fill='toself',
                   fillcolor='rgba(220, 220, 220, 0.3)', line=dict(color='rgba(255,255,255,0)'), hoverinfo="skip", name=f'±{rmse:.1f} RMSE Band'))
     min_val, max_val = min(data[actual_col].min(), data[list(pred_cols_dict.values())[
@@ -451,6 +448,26 @@ def display_dashboard_tab(reactor):
             err_col.plotly_chart(px.histogram(pd.concat(error_dfs), x="Error", color="Model", marginal="box", barmode="overlay", title="<b>Error Distribution</b>",
                                  height=450, template="plotly_white", color_discrete_map=model_colors).add_vline(x=0, line_dash="dash", line_color="red"), use_container_width=True)
 
+    # UI/UX FIX: Moved "What-If" scenarios to the dashboard for better visibility and workflow.
+    with st.container(border=True):
+        st.header(f"⚡ {t('what_if_header')}")
+        st.info(t('what_if_help'))
+        what_if_cols = st.columns(3)
+        what_if_cod = what_if_cols[0].slider(
+            t('what_if_cod'), 5000, 40000, int(reactor.df['COD_in'].mean()), 500)
+        what_if_hrt_uasb = what_if_cols[1].slider(
+            t('what_if_hrt_uasb'), 1.0, 20.0, reactor.df['HRT_UASB'].mean(), 0.1)
+        what_if_hrt_rbc = what_if_cols[2].slider(
+            t('what_if_hrt_rbc'), 1.0, 120.0, reactor.df['HRT_hours'].mean(), 0.5)
+        if reactor.params_uasb and reactor.params_rbc_ph:
+            srr_pred = reactor.uasb_model.predict(
+                (what_if_cod / what_if_hrt_uasb, 0.3), reactor.params_uasb)
+            cod_uasb_pred = what_if_cod - srr_pred * what_if_hrt_uasb
+            final_pred = reactor.rbc_model_ph.predict(
+                {'So': cod_uasb_pred * 0.8, 'HRT_days': what_if_hrt_rbc / 24.0, 'Xa': 400, 'Xs': 200, 'pH': 7.5}, reactor.params_rbc_ph)
+            st.metric(label=t('what_if_result'),
+                      value=f"{final_pred:.0f} mg/L" if not np.isnan(final_pred) else "N/A")
+
     st.markdown("---")
     st.header(t('filtered_data_header'))
     st.dataframe(filtered_df)
@@ -503,30 +520,32 @@ def display_model_details_tab(reactor, data_content):
 
 def display_methane_tab(reactor):
     st.header(t('methane_header'))
-    min_day, max_day = int(reactor.df['Day'].min()), int(
-        reactor.df['Day'].max())
-    selected_days = st.slider(
-        t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_methane')
-    filtered_df = reactor.df[(reactor.df['Day'] >= selected_days[0]) & (
-        reactor.df['Day'] <= selected_days[1])]
-    uasb_cod_removed = (filtered_df['COD_in'] - filtered_df['COD_UASB_Pred']).mean(
-    ) if 'COD_UASB_Pred' in filtered_df and not filtered_df.empty else 0
-    uasb_volume = st.number_input(
-        t('uasb_volume_label'), value=25.0, min_value=0.1)
-    mean_hrt = filtered_df['HRT_UASB'].mean()
-    # BUG FIX: Prevent ZeroDivisionError if mean_hrt is 0 or NaN
-    avg_flow_rate = uasb_volume / mean_hrt if mean_hrt > 0 else 0
-    cod_mass_removed_kg_day = (uasb_cod_removed * avg_flow_rate) / 1000
-    methane_yield = st.slider(t('methane_yield_label'), 0.20, 0.40, 0.35, 0.01)
-    methane_prod = cod_mass_removed_kg_day * methane_yield
-    energy_potential = methane_prod * 9.7  # kWh/m3 CH4
-    m_cols = st.columns(3)
-    m_cols[0].metric(f"{t('cod_removed_label')} (kg/day)",
-                     f"{cod_mass_removed_kg_day:.1f}")
-    m_cols[1].metric(f"{t('methane_prod_label')} (m³/day)",
-                     f"{methane_prod:.1f}")
-    m_cols[2].metric(
-        f"{t('energy_potential_label')} (kWh/day)", f"{energy_potential:.1f}")
+    with st.container(border=True):
+        min_day, max_day = int(reactor.df['Day'].min()), int(
+            reactor.df['Day'].max())
+        selected_days = st.slider(
+            t('date_slider'), min_day, max_day, (min_day, max_day), key='date_slider_methane')
+        filtered_df = reactor.df[(reactor.df['Day'] >= selected_days[0]) & (
+            reactor.df['Day'] <= selected_days[1])]
+        uasb_cod_removed = (filtered_df['COD_in'] - filtered_df['COD_UASB_Pred']).mean(
+        ) if 'COD_UASB_Pred' in filtered_df and not filtered_df.empty else 0
+        uasb_volume = st.number_input(
+            t('uasb_volume_label'), value=25.0, min_value=0.1)
+        mean_hrt = filtered_df['HRT_UASB'].mean()
+        # BUG FIX: Prevent ZeroDivisionError if mean_hrt is 0 or NaN
+        avg_flow_rate = uasb_volume / mean_hrt if mean_hrt > 0 else 0
+        cod_mass_removed_kg_day = (uasb_cod_removed * avg_flow_rate) / 1000
+        methane_yield = st.slider(
+            t('methane_yield_label'), 0.20, 0.40, 0.35, 0.01)
+        methane_prod = cod_mass_removed_kg_day * methane_yield
+        energy_potential = methane_prod * 9.7  # kWh/m3 CH4
+        m_cols = st.columns(3)
+        m_cols[0].metric(f"{t('cod_removed_label')} (kg/day)",
+                         f"{cod_mass_removed_kg_day:.1f}")
+        m_cols[1].metric(
+            f"{t('methane_prod_label')} (m³/day)", f"{methane_prod:.1f}")
+        m_cols[2].metric(
+            f"{t('energy_potential_label')} (kWh/day)", f"{energy_potential:.1f}")
 
 
 def display_sensitivity_tab(reactor, data_content, config):
@@ -582,51 +601,60 @@ def display_sensitivity_tab(reactor, data_content, config):
 
 def display_optimizer_tab(reactor):
     st.header(t('optimizer_header'))
-    st.info(t('optimizer_intro'))
-    opt_col1, opt_col2 = st.columns([1, 2])
-    with opt_col1:
-        st.selectbox(t('optimizer_goal'), [t('optimizer_goal_option')])
-        st.subheader(t('optimizer_constraints'))
-        cod_bounds = st.slider(t('what_if_cod'), 5000, 40000, (15000, 25000))
-        hrt_uasb_bounds = st.slider(
-            t('what_if_hrt_uasb'), 1.0, 20.0, (1.5, 5.0))
-        hrt_rbc_bounds = st.slider(
-            t('what_if_hrt_rbc'), 1.0, 120.0, (6.0, 24.0))
-        if st.button(t('optimizer_button'), type='primary', use_container_width=True):
-            with st.spinner("Finding optimal settings..."):
-                bounds = [cod_bounds, hrt_uasb_bounds, hrt_rbc_bounds]
-                fixed_params = {k: reactor.df[v].mean() for k, v in {'vfa_alk': 'VFA_ALK_Ratio', 'tss_in': 'TSS_UASB_Eff',
-                                                                     'tss_out': 'TSS_Filt_Eff', 'xa': 'Xa', 'xs': 'Xs', 'ph': 'pH_Eff_RBC'}.items()}
-                result = minimize(optimization_objective_function, [np.mean(b) for b in bounds], args=(
-                    reactor, fixed_params), bounds=bounds, method='L-BFGS-B')
-                st.session_state.optimizer_results = result
-    with opt_col2:
-        if st.session_state.optimizer_results:
-            res = st.session_state.optimizer_results
-            st.subheader(t('optimizer_results_header'))
-            if res.success:
-                st.success(t('optimizer_success'))
-                r_cols = st.columns(3)
-                r_cols[0].metric("Optimal Influent COD",
-                                 f"{res.x[0]:.0f} mg/L")
-                r_cols[1].metric("Optimal UASB HRT", f"{res.x[1]:.2f} days")
-                r_cols[2].metric("Optimal RBC HRT", f"{res.x[2]:.2f} hours")
-                st.metric("Predicted Minimum Final Effluent",
-                          f"{res.fun:.1f} mg/L")
-            else:
-                st.error(t('optimizer_fail'))
+    with st.container(border=True):
+        st.info(t('optimizer_intro'))
+        opt_col1, opt_col2 = st.columns([1, 2])
+        with opt_col1:
+            st.selectbox(t('optimizer_goal'), [t('optimizer_goal_option')])
+            st.subheader(t('optimizer_constraints'))
+            cod_bounds = st.slider(
+                t('what_if_cod'), 5000, 40000, (15000, 25000))
+            hrt_uasb_bounds = st.slider(
+                t('what_if_hrt_uasb'), 1.0, 20.0, (1.5, 5.0))
+            hrt_rbc_bounds = st.slider(
+                t('what_if_hrt_rbc'), 1.0, 120.0, (6.0, 24.0))
+            if st.button(t('optimizer_button'), type='primary', use_container_width=True):
+                with st.spinner("Finding optimal settings..."):
+                    bounds = [cod_bounds, hrt_uasb_bounds, hrt_rbc_bounds]
+                    fixed_params = {k: reactor.df[v].mean() for k, v in {
+                        'vfa_alk': 'VFA_ALK_Ratio', 'tss_in': 'TSS_UASB_Eff', 'tss_out': 'TSS_Filt_Eff', 'xa': 'Xa', 'xs': 'Xs', 'ph': 'pH_Eff_RBC'}.items()}
+                    result = minimize(optimization_objective_function, [np.mean(b) for b in bounds], args=(
+                        reactor, fixed_params), bounds=bounds, method='L-BFGS-B')
+                    st.session_state.optimizer_results = result
+        with opt_col2:
+            if st.session_state.optimizer_results:
+                res = st.session_state.optimizer_results
+                st.subheader(t('optimizer_results_header'))
+                if res.success:
+                    st.success(t('optimizer_success'))
+                    r_cols = st.columns(3)
+                    r_cols[0].metric("Optimal Influent COD",
+                                     f"{res.x[0]:.0f} mg/L")
+                    r_cols[1].metric("Optimal UASB HRT",
+                                     f"{res.x[1]:.2f} days")
+                    r_cols[2].metric("Optimal RBC HRT",
+                                     f"{res.x[2]:.2f} hours")
+                    st.metric("Predicted Minimum Final Effluent",
+                              f"{res.fun:.1f} mg/L")
+                else:
+                    st.error(t('optimizer_fail'))
 
 
 def display_help_tab():
     st.header(t('help_title'))
     st.info(t('help_intro'))
-    with st.expander(t('help_usage_title'), expanded=True):
+
+    # UI/UX FIX: Replaced expanders with tabs for easier navigation.
+    h_tab1, h_tab2, h_tab3 = st.tabs(
+        [t('help_usage_title'), t('help_tab_guide_title'), t('help_faq_title')])
+    with h_tab1:
         st.markdown(f"**{t('help_usage_step1_title')}**: {t('help_usage_step1_text')}<br>**{t('help_usage_step2_title')}**: {t('help_usage_step2_text')}<br>**{t('help_usage_step3_title')}**: {t('help_usage_step3_text')}<br>**{t('help_usage_step4_title')}**: {t('help_usage_step4_text')}", unsafe_allow_html=True)
-    with st.expander(t('help_tab_guide_title')):
+    with h_tab2:
         st.markdown(f"**📊 {t('tabs')[0]}**: {t('help_tab_dashboard_desc')}<br>**🔬 {t('tabs')[1]}**: {t('help_tab_model_details_desc')}<br>**🍃 {t('tabs')[2]}**: {t('help_tab_methane_desc')}<br>**🔬 {t('tabs')[3]}**: {t('help_tab_sensitivity_desc')}<br>**⚙️ {t('tabs')[4]}**: {t('help_tab_optimizer_desc')}", unsafe_allow_html=True)
-    with st.expander(t('help_faq_title')):
+    with h_tab3:
         st.markdown(f"**{t('help_faq1_q')}**\n{t('help_faq1_a')}")
         st.markdown(f"**{t('help_faq2_q')}**\n{t('help_faq2_a')}")
+
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
     st.subheader("📤 Feedback & Support")
     with st.form("feedback_form"):
@@ -663,26 +691,6 @@ def main():
                 t('sidebar_rbc_area'), value=240.0)
         run_estimation_button = st.button(
             t('sidebar_calibrate'), type="primary", use_container_width=True, help=t('sidebar_calibrate_help'))
-
-        # "What-If" Scenario section
-        if st.session_state.reactor:
-            st.markdown("---")
-            st.header(t('what_if_header'))
-            st.info(t('what_if_help'))
-            what_if_cod = st.slider(t('what_if_cod'), 5000, 40000, int(
-                st.session_state.reactor.df['COD_in'].mean()), 500)
-            what_if_hrt_uasb = st.slider(
-                t('what_if_hrt_uasb'), 1.0, 20.0, st.session_state.reactor.df['HRT_UASB'].mean(), 0.1)
-            what_if_hrt_rbc = st.slider(
-                t('what_if_hrt_rbc'), 1.0, 120.0, st.session_state.reactor.df['HRT_hours'].mean(), 0.5)
-            if st.session_state.reactor.params_uasb and st.session_state.reactor.params_rbc_ph:
-                srr_pred = st.session_state.reactor.uasb_model.predict(
-                    (what_if_cod / what_if_hrt_uasb, 0.3), st.session_state.reactor.params_uasb)
-                cod_uasb_pred = what_if_cod - srr_pred * what_if_hrt_uasb
-                final_pred = st.session_state.reactor.rbc_model_ph.predict(
-                    {'So': cod_uasb_pred * 0.8, 'HRT_days': what_if_hrt_rbc / 24.0, 'Xa': 400, 'Xs': 200, 'pH': 7.5}, st.session_state.reactor.params_rbc_ph)
-                st.metric(label=t('what_if_result'),
-                          value=f"{final_pred:.0f} mg/L" if not np.isnan(final_pred) else "N/A")
 
     # --- Data Loading and Calibration ---
     data_content = uploaded_file.getvalue() if uploaded_file else load_default_data()
