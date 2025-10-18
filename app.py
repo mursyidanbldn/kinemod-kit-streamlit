@@ -203,6 +203,19 @@ def load_default_data():
         return None
 
 
+def validate_data(df):
+    """Checks if the uploaded dataframe contains all required columns."""
+    required_cols = [
+        'Day', 'COD_in', 'HRT_UASB', 'VFA_Eff', 'ALK_Eff', 'TSS_UASB_Eff',
+        'TSS_Filt_Eff', 'COD_UASB_Eff', 'COD_Filt_Eff', 'COD_Final', 'Xa',
+        'Xs', 'pH_Eff_RBC', 'Steady_State', 'HRT_hours'
+    ]
+    missing_cols = set(required_cols) - set(df.columns)
+    if missing_cols:
+        return list(missing_cols)
+    return None
+
+
 @st.cache_data
 def run_full_analysis(_uploaded_file_content, config):
     data_buffer = io.BytesIO(_uploaded_file_content)
@@ -886,6 +899,22 @@ def main():
 
     # --- Data Loading and Calibration ---
     data_content = uploaded_file.getvalue() if uploaded_file else load_default_data()
+    if data_content:
+        try:
+            # Read the data into a dataframe first
+            temp_df = pd.read_csv(io.BytesIO(data_content), sep=';')
+
+            # Run the validation check
+            missing = validate_data(temp_df)
+            if missing:
+                st.error(
+                    f"❌ **Data Error:** Your CSV file is missing the following required columns: **{', '.join(missing)}**. Please correct the file and upload it again.")
+                st.stop()  # This halts the app gracefully
+
+        except Exception as e:
+            st.error(
+                f"❌ **File Read Error:** Could not read the CSV file. Please ensure it is a valid CSV with semicolon (;) separators. Error: {e}")
+            st.stop()
     if data_content is None and use_default_data:
         st.error(
             "Error: Default `Model_Data.csv` not found. Please ensure it is in the same directory as `app.py`.")
